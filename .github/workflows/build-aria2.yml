@@ -3,10 +3,10 @@ name: Build static aria2 with OpenSSL for multiple platforms
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
   workflow_dispatch:  # 支持手动触发
 
 jobs:
