@@ -93,9 +93,9 @@ jobs:
           choco install -y mingw make openssl vcredist2015
           # 手动安装 MSYS2
           choco install -y msys2
-          # 使用 MSYS2 安装 autoconf, automake, libtool, pkg-config
-          echo "Installing autoconf, automake, libtool, pkg-config via MSYS2..."
-          C:\\tools\\msys64\\usr\\bin\\bash -lc "pacman -S --noconfirm autoconf automake libtool pkg-config"
+          # 使用 MSYS2 安装 autoconf, automake, libtool, pkg-config, gettext
+          echo "Installing autoconf, automake, libtool, pkg-config, gettext via MSYS2..."
+          C:\\tools\\msys64\\usr\\bin\\bash -lc "pacman -S --noconfirm autoconf automake libtool pkg-config gettext"
           # 将 MSYS2 的路径添加到 PATH
           echo "Adding MSYS2 to PATH..."
           echo "C:\\tools\\msys64\\usr\\bin" >> $GITHUB_PATH
@@ -105,6 +105,7 @@ jobs:
       shell: bash
       run: |
         cd aria2-official
+        git clean -fdx  # 清理旧的生成文件
         autoreconf -i
         case ${{ matrix.platform }} in
           linux64)
