@@ -89,7 +89,7 @@ jobs:
           brew install automake autoconf libtool pkg-config cmake nasm yasm \
             libxml2 sqlite zlib libssh2 c-ares gmp nettle expat openssl || true
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          choco install -y mingw make openssl
+          choco install -y mingw make openssl autoconf automake libtool pkg-config
         fi
 
     - name: Configure and build for ${{ matrix.platform }}
