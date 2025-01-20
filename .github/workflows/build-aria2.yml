@@ -12,13 +12,13 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-22.04, macos-latest, windows-latest]  # 指定 Ubuntu 22.04
         platform: [linux64, linux32, macos64, win64]  # 保留的平台
         exclude:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             platform: macos64
-          - os: ubuntu-latest
-            platform: win64  # 去掉 ubuntu-latest, win64
+          - os: ubuntu-22.04
+            platform: win64  # 去掉 ubuntu-22.04, win64
           - os: macos-latest
             platform: linux64
           - os: macos-latest
@@ -80,7 +80,7 @@ jobs:
             libssh2-1-dev \
             libc-ares-dev \
             libgmp-dev \
-            libnettle-dev \  # 使用 libnettle-dev 替代 nettle-dev
+            nettle-dev \  # 使用 nettle-dev 替代 libnettle-dev
             libexpat1-dev \
             mingw-w64
         elif [[ "${{ runner.os }}" == "macOS" ]]; then
