@@ -16,28 +16,18 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        platform: [linux64, linux32, macos64, macos32, win64, win32]
+        platform: [linux64, linux32, macos64, win64]  # 去掉 macos32 和 win32
         exclude:
           - os: ubuntu-latest
             platform: macos64
-          - os: ubuntu-latest
-            platform: macos32
           - os: macos-latest
             platform: linux64
-          - os: macos-latest
-            platform: linux32
           - os: macos-latest
             platform: win64
-          - os: macos-latest
-            platform: win32
           - os: windows-latest
             platform: linux64
           - os: windows-latest
-            platform: linux32
-          - os: windows-latest
             platform: macos64
-          - os: windows-latest
-            platform: macos32
 
     steps:
     - name: Checkout this repository
@@ -113,9 +103,6 @@ jobs:
           macos64)
             ./configure --host=x86_64-apple-darwin --with-openssl --enable-static --disable-shared
             ;;
-          macos32)
-            ./configure --host=i686-apple-darwin --with-openssl --enable-static --disable-shared
-            ;;
           win64)
             if [[ "${{ runner.os }}" == "Windows" ]]; then
               # On Windows, use mingw-w64 directly
@@ -123,15 +110,6 @@ jobs:
             else
               # On Linux/macOS, use cross-compilation
               ./mingw-config HOST=x86_64-w64-mingw32 --with-openssl --enable-static --disable-shared
-            fi
-            ;;
-          win32)
-            if [[ "${{ runner.os }}" == "Windows" ]]; then
-              # On Windows, use mingw-w64 directly
-              ./configure --host=i686-w64-mingw32 --with-openssl --enable-static --disable-shared
-            else
-              # On Linux/macOS, use cross-compilation
-              ./mingw-config HOST=i686-w64-mingw32 --with-openssl --enable-static --disable-shared
             fi
             ;;
         esac
