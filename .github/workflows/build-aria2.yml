@@ -89,7 +89,14 @@ jobs:
           brew install automake autoconf libtool pkg-config cmake nasm yasm \
             libxml2 sqlite zlib libssh2 c-ares gmp nettle expat openssl || true
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          choco install -y mingw make openssl autoconf automake libtool pkg-config
+          # 安装必要的依赖
+          choco install -y mingw make openssl vcredist2015
+          # 手动安装 autoconf, automake, libtool, pkg-config
+          # 这些工具在 Windows 上通常通过 MSYS2 安装
+          choco install -y msys2
+          # 使用 MSYS2 安装 autoconf, automake, libtool, pkg-config
+          echo "Installing autoconf, automake, libtool, pkg-config via MSYS2..."
+          C:\tools\msys64\usr\bin\bash -lc "pacman -S --noconfirm autoconf automake libtool pkg-config"
         fi
 
     - name: Configure and build for ${{ matrix.platform }}
