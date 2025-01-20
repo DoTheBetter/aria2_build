@@ -96,7 +96,7 @@ jobs:
           choco install -y msys2
           # 使用 MSYS2 安装 autoconf, automake, libtool, pkg-config
           echo "Installing autoconf, automake, libtool, pkg-config via MSYS2..."
-          C:\tools\msys64\usr\bin\bash -lc "pacman -S --noconfirm autoconf automake libtool pkg-config"
+          C:\\tools\\msys64\\usr\\bin\\bash -lc "pacman -S --noconfirm autoconf automake libtool pkg-config"
         fi
 
     - name: Configure and build for ${{ matrix.platform }}
