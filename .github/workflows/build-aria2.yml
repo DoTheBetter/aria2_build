@@ -3,10 +3,10 @@ name: Build static aria2 with OpenSSL for multiple platforms
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
   workflow_dispatch:  # 支持手动触发
 
 jobs:
@@ -49,6 +49,7 @@ jobs:
         cd aria2-official
 
     - name: Apply patches (if any)
+      shell: bash
       run: |
         # Apply any patches you have in your repository
         if [ -f ../patches/*.patch ]; then
@@ -86,17 +87,19 @@ jobs:
             libssh2-1-dev \
             libc-ares-dev \
             libgmp-dev \
-            libnettle-dev \
+            nettle-dev \  # 替换 libnettle-dev 为 nettle-dev
             libexpat1-dev \
             mingw-w64
         elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          # 安装必要的依赖，跳过已安装的包
           brew install automake autoconf libtool pkg-config cmake nasm yasm \
-            libxml2 sqlite zlib libssh2 c-ares gmp nettle expat openssl
+            libxml2 sqlite zlib libssh2 c-ares gmp nettle expat openssl || true
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
           choco install -y mingw make openssl
         fi
 
     - name: Configure and build for ${{ matrix.platform }}
+      shell: bash
       run: |
         cd aria2-official
         autoreconf -i
