@@ -117,7 +117,7 @@ jobs:
             fi
             ;;
         esac
-        make -j$(nproc)
+        make -j2  # 减少并行编译任务数量
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
