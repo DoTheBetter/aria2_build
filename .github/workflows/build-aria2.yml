@@ -91,12 +91,14 @@ jobs:
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
           # 安装必要的依赖
           choco install -y mingw make openssl vcredist2015
-          # 手动安装 autoconf, automake, libtool, pkg-config
-          # 这些工具在 Windows 上通常通过 MSYS2 安装
+          # 手动安装 MSYS2
           choco install -y msys2
           # 使用 MSYS2 安装 autoconf, automake, libtool, pkg-config
           echo "Installing autoconf, automake, libtool, pkg-config via MSYS2..."
           C:\\tools\\msys64\\usr\\bin\\bash -lc "pacman -S --noconfirm autoconf automake libtool pkg-config"
+          # 将 MSYS2 的路径添加到 PATH
+          echo "Adding MSYS2 to PATH..."
+          echo "C:\\tools\\msys64\\usr\\bin" >> $GITHUB_PATH
         fi
 
     - name: Configure and build for ${{ matrix.platform }}
