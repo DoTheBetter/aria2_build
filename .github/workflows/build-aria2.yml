@@ -80,7 +80,7 @@ jobs:
             libssh2-1-dev \
             libc-ares-dev \
             libgmp-dev \
-            nettle-dev \  # 使用 nettle-dev 替代 libnettle-dev
+            libnettle-dev \  # 使用 libnettle-dev 替代 nettle-dev
             libexpat1-dev \
             mingw-w64
         elif [[ "${{ runner.os }}" == "macOS" ]]; then
