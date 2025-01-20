@@ -52,6 +52,7 @@ jobs:
         fi
 
     - name: Install dependencies
+      shell: bash
       run: |
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           sudo apt-get update
