@@ -101,12 +101,17 @@ jobs:
           echo "C:\\tools\\msys64\\usr\\bin" >> $GITHUB_PATH
         fi
 
+    - name: Run autoreconf manually
+      shell: bash
+      run: |
+        cd aria2-official
+        autoreconf -i -v  # 添加 -v 参数以显示详细日志
+
     - name: Configure and build for ${{ matrix.platform }}
       shell: bash
       run: |
         cd aria2-official
         git clean -fdx  # 清理旧的生成文件
-        autoreconf -i
         case ${{ matrix.platform }} in
           linux64)
             ./configure --host=x86_64-linux-gnu --with-openssl --enable-static --disable-shared
