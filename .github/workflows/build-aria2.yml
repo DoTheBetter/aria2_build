@@ -1,0 +1,140 @@
+name: Build static aria2 with OpenSSL for multiple platforms
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [linux64, linux32, macos64, macos32, win64, win32]
+        exclude:
+          - os: ubuntu-latest
+            platform: macos64
+          - os: ubuntu-latest
+            platform: macos32
+          - os: macos-latest
+            platform: linux64
+          - os: macos-latest
+            platform: linux32
+          - os: macos-latest
+            platform: win64
+          - os: macos-latest
+            platform: win32
+          - os: windows-latest
+            platform: linux64
+          - os: windows-latest
+            platform: linux32
+          - os: windows-latest
+            platform: macos64
+          - os: windows-latest
+            platform: macos32
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v3
+
+    - name: Clone aria2 official repository
+      run: |
+        git clone https://github.com/aria2/aria2.git aria2-official
+        cd aria2-official
+
+    - name: Apply patches (if any)
+      run: |
+        # Apply any patches you have in your repository
+        if [ -f ../patches/*.patch ]; then
+          for patch in ../patches/*.patch; do
+            git apply $patch
+          done
+        fi
+
+    - name: Install dependencies
+      run: |
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            git \
+            wget \
+            curl \
+            tar \
+            gzip \
+            bzip2 \
+            unzip \
+            cmake \
+            nasm \
+            yasm \
+            python3 \
+            python3-pip \
+            libssl-dev \
+            libxml2-dev \
+            libsqlite3-dev \
+            zlib1g-dev \
+            libssh2-1-dev \
+            libc-ares-dev \
+            libgmp-dev \
+            libnettle-dev \
+            libexpat1-dev \
+            mingw-w64
+        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          brew install automake autoconf libtool pkg-config cmake nasm yasm \
+            libxml2 sqlite zlib libssh2 c-ares gmp nettle expat openssl
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          choco install -y mingw make openssl
+        fi
+
+    - name: Configure and build for ${{ matrix.platform }}
+      run: |
+        cd aria2-official
+        autoreconf -i
+        case ${{ matrix.platform }} in
+          linux64)
+            ./configure --host=x86_64-linux-gnu --with-openssl --enable-static --disable-shared
+            ;;
+          linux32)
+            ./configure --host=i686-linux-gnu --with-openssl --enable-static --disable-shared
+            ;;
+          macos64)
+            ./configure --host=x86_64-apple-darwin --with-openssl --enable-static --disable-shared
+            ;;
+          macos32)
+            ./configure --host=i686-apple-darwin --with-openssl --enable-static --disable-shared
+            ;;
+          win64)
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              # On Windows, use mingw-w64 directly
+              ./configure --host=x86_64-w64-mingw32 --with-openssl --enable-static --disable-shared
+            else
+              # On Linux/macOS, use cross-compilation
+              ./mingw-config HOST=x86_64-w64-mingw32 --with-openssl --enable-static --disable-shared
+            fi
+            ;;
+          win32)
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              # On Windows, use mingw-w64 directly
+              ./configure --host=i686-w64-mingw32 --with-openssl --enable-static --disable-shared
+            else
+              # On Linux/macOS, use cross-compilation
+              ./mingw-config HOST=i686-w64-mingw32 --with-openssl --enable-static --disable-shared
+            fi
+            ;;
+        esac
+        make -j$(nproc)
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: aria2-${{ matrix.platform }}-static
+        path: aria2-official/src/aria2c
