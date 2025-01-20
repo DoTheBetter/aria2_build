@@ -119,6 +119,18 @@ jobs:
         esac
         make -j2  # 减少并行编译任务数量
 
+    - name: Verify compilation
+      shell: bash
+      run: |
+        cd aria2-official
+        if [[ -f src/aria2c ]]; then
+          echo "Compilation successful: aria2c binary found."
+          ./src/aria2c --version  # 验证 aria2c 是否正常运行
+        else
+          echo "Error: aria2c binary not found. Compilation failed."
+          exit 1
+        fi
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
