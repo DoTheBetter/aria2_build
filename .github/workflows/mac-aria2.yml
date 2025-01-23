@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths:
+      - '.github/workflows/mac-aria2.yml'
   workflow_dispatch:
 
 jobs:
@@ -11,29 +13,29 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install \
-          automake autoconf libtool pkg-config \
-          openssl@3 c-ares libssh2 zlib \
-          libxml2 sqlite3 nettle libgmp
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install \
+            automake autoconf libtool pkg-config \
+            openssl c-ares libssh2 zlib \
+            libxml2 sqlite3 nettle libgmp libpgm
 
-    - name: Set up OpenSSL environment
-      run: |
-        echo "OPENSSL_ROOT=$(brew --prefix openssl@3)" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix libgmp)/lib/pkgconfig" >> $GITHUB_ENV
+      - name: Set up OpenSSL environment
+        run: |
+          echo "OPENSSL_ROOT=$(brew --prefix openssl)" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix libgmp)/lib/pkgconfig" >> $GITHUB_ENV
 
-    - name: Clone aria2 source code
-      run: |
-        git clone https://github.com/aria2/aria2.git
-        cd aria2
+      - name: Clone aria2 source code
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
 
-    - name: Apply patches from patch directory
-      run: |
+      - name: Apply patches from patch directory
+        run: |
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
             echo "Applying patches from $GITHUB_WORKSPACE/patch..."
             for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
@@ -48,31 +50,29 @@ jobs:
             echo "No patch directory found, skipping patch application."
           fi
 
-    - name: Generate configure script
-      run: |
-        autoreconf -i
+      - name: Generate configure script
+        run: |
+          autoreconf -i
 
-    - name: Configure aria2 with full features
-      run: |
-        ./configure \
-          --with-openssl \
-          --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
-          --enable-bittorrent \
-          --enable-metalink \
-          --enable-libaria2 \
-          --enable-static \
-          --disable-shared
+      - name: Configure aria2 with full features
+        run: |
+          ./configure \
+            --with-openssl \
+            --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+            --enable-static \
+            --disable-shared
 
-    - name: Build aria2
-      run: |
-        make -j$(sysctl -n hw.ncpu)
+      - name: Build aria2
+        run: |
+          make -j$(sysctl -n hw.ncpu)
 
-    - name: Test aria2
-      run: |
-        make check
+      - name: Test aria2
+        run: |
+          ./src/aria2c --version
+          make check
 
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: aria2-macos-64bit-patched
-        path: aria2/src/aria2c
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria2-macos-64bit
+          path: aria2/src/aria2c

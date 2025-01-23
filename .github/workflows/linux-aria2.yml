@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - '**'
+      - '.github/workflows/linux-aria2.yml'
   workflow_dispatch:
 
 env:
