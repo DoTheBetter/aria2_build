@@ -138,7 +138,7 @@ jobs:
           zip -r dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip dist/${{ matrix.arch }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: aria2-${{ matrix.arch }}-windows-static-recommended
           path: aria2-official/dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip

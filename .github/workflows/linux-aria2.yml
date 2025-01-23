@@ -1,4 +1,4 @@
-name: Build aria2 with OpenSSL (Multi-Architecture)
+name: Build aria2 with OpenSSL for Linux (64/32-bit)
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
             libc-ares-dev \
             libsqlite3-dev \
             zlib1g-dev \
-            libcppunit-dev \
+            libcppunit-dev \  # 添加 CppUnit 依赖
             git \
             wget \
             autopoint
@@ -214,9 +214,14 @@ jobs:
           sudo make install
           cd ..
 
+      - name: Run unit tests (make check)
+        run: |
+          cd aria2
+          make check || exit 1  # 运行单元测试，如果失败则退出
+          cd ..
+
       - name: Verify aria2 compilation
         run: |
-          make check
           /usr/local/bin/aria2c --version || exit 1
 
       - name: Package aria2 binary
