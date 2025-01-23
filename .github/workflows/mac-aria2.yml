@@ -21,21 +21,21 @@ jobs:
           brew update
           brew install \
             automake autoconf libtool pkg-config \
-            openssl c-ares libssh2 zlib \
-            libxml2 sqlite3 nettle libgmp openpgm
+            openssl libssh2 zlib sqlite3 c-ares libxml2 \
+            nettle gmp
 
       - name: Set up OpenSSL environment
         run: |
           echo "OPENSSL_ROOT=$(brew --prefix openssl)" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix libgmp)/lib/pkgconfig:$(brew --prefix openpgm)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix gmp)/lib/pkgconfig" >> $GITHUB_ENV
 
-      - name: Clone aria2 source code
+      - name: Build and configure aria2
         run: |
+          # 克隆 aria2 源代码
           git clone https://github.com/aria2/aria2.git
           cd aria2
 
-      - name: Apply patches from patch directory
-        run: |
+          # 应用补丁（如果有）
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
             echo "Applying patches from $GITHUB_WORKSPACE/patch..."
             for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
@@ -50,12 +50,10 @@ jobs:
             echo "No patch directory found, skipping patch application."
           fi
 
-      - name: Generate configure script
-        run: |
+          # 生成配置脚本
           autoreconf -i
 
-      - name: Configure aria2 with full features
-        run: |
+          # 配置 aria2
           ./configure \
             --with-openssl \
             --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
@@ -64,10 +62,12 @@ jobs:
 
       - name: Build aria2
         run: |
+          cd aria2
           make -j$(sysctl -n hw.ncpu)
 
       - name: Test aria2
         run: |
+          cd aria2
           ./src/aria2c --version
           make check
 
