@@ -36,7 +36,8 @@ jobs:
             libcppunit-dev \
             git \
             wget \
-            gcc-multilib
+            gcc-multilib \
+            gettext  # 安装 gettext，包含 autopoint
 
       - name: Set up environment for ${{ matrix.arch }}
         run: |
@@ -104,7 +105,7 @@ jobs:
         run: |
           git clone https://github.com/aria2/aria2.git
           cd aria2
-          autoreconf -i
+          autoreconf -i  # 重新生成配置文件
           ./configure \
             --prefix=/usr/local \
             --enable-static \
