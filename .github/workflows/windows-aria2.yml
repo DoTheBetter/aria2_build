@@ -95,11 +95,14 @@ jobs:
           # 切换到官方仓库目录
           cd aria2-official
 
+          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
+          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
+
           # 确保在 MSYS2 环境中运行 autoreconf
-          /c/msys64/usr/bin/bash -lc "cd /$(pwd -W) && autoreconf -i"
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && autoreconf -i"
 
           # 配置并构建 aria2，启用推荐的选项
-          /c/msys64/usr/bin/bash -lc "cd /$(pwd -W) && ./configure \
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && ./configure \
             --host=${{ matrix.arch }}-w64-mingw32 \
             --enable-static \
             --disable-shared \
@@ -112,7 +115,7 @@ jobs:
             --with-nettle \
             --with-expat"
 
-          /c/msys64/usr/bin/bash -lc "cd /$(pwd -W) && make -j$(nproc)"
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && make -j$(nproc)"
 
       - name: Run unit tests (make check)
         shell: bash
@@ -120,8 +123,11 @@ jobs:
           # 切换到官方仓库目录
           cd aria2-official
 
+          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
+          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
+
           # 运行单元测试
-          /c/msys64/usr/bin/bash -lc "cd /$(pwd -W) && make check"
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && make check"
 
       - name: Check aria2c version
         shell: bash
@@ -129,8 +135,11 @@ jobs:
           # 切换到官方仓库目录
           cd aria2-official
 
+          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
+          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
+
           # 输出 aria2c 版本以验证构建成功
-          /c/msys64/usr/bin/bash -lc "cd /$(pwd -W) && ./src/aria2c --version"
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && ./src/aria2c --version"
 
       - name: Package artifacts
         shell: bash
