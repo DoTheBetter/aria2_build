@@ -115,7 +115,11 @@ jobs:
 
       - name: Build and install expat
         run: |
-          wget https://github.com/libexpat/libexpat/releases/download/R_${{ env.EXPAT_VERSION }}/expat-${{ env.EXPAT_VERSION }}.tar.gz
+          # 将 EXPAT_VERSION 从 2.6.4 转换为 R_2_6_4
+          EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
+          EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
+          
+          wget https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
           tar xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
           cd expat-${{ env.EXPAT_VERSION }}
           if [ -n "$HOST" ]; then
