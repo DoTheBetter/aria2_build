@@ -22,12 +22,12 @@ jobs:
           brew install \
             automake autoconf libtool pkg-config \
             openssl c-ares libssh2 zlib \
-            libxml2 sqlite3 nettle libgmp libpgm
+            libxml2 sqlite3 nettle libgmp openpgm
 
       - name: Set up OpenSSL environment
         run: |
           echo "OPENSSL_ROOT=$(brew --prefix openssl)" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix libgmp)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix libgmp)/lib/pkgconfig:$(brew --prefix openpgm)/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Clone aria2 source code
         run: |
