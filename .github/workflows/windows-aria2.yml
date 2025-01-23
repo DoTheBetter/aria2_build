@@ -76,7 +76,7 @@ jobs:
               automake \
               libtool \
               make \
-              gettext"
+              mingw-w64-i686-gettext"
           fi
 
       - name: Set up build environment
