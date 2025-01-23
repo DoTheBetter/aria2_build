@@ -61,6 +61,7 @@ jobs:
             export ARCH_SUFFIX="linux-386"
             # 安装 gcc-multilib 用于 386
             sudo apt-get install -y gcc-multilib
+            export HOST="i386-linux-gnu"  # 设置正确的目标架构名称
           elif [ "${{ matrix.arch }}" = "armv7" ]; then
             export CC="arm-linux-gnueabihf-gcc"
             export CXX="arm-linux-gnueabihf-g++"
@@ -75,7 +76,7 @@ jobs:
           wget https://github.com/c-ares/c-ares/releases/download/v1.34.4/c-ares-1.34.4.tar.gz
           tar xzf c-ares-1.34.4.tar.gz
           cd c-ares-1.34.4
-          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
+          ./configure --prefix=/usr/local --host=$HOST
           make -j$(nproc)
           sudo make install
           cd ..
@@ -85,7 +86,7 @@ jobs:
           wget https://github.com/libexpat/libexpat/releases/download/R_2_6_4/expat-2.6.4.tar.gz
           tar xzf expat-2.6.4.tar.gz
           cd expat-2.6.4
-          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
+          ./configure --prefix=/usr/local --host=$HOST
           make -j$(nproc)
           sudo make install
           cd ..
@@ -95,7 +96,7 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar xzf zlib-1.3.1.tar.gz
           cd zlib-1.3.1
-          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
+          ./configure --prefix=/usr/local --host=$HOST
           make -j$(nproc)
           sudo make install
           cd ..
@@ -105,7 +106,7 @@ jobs:
           wget https://www.sqlite.org/2025/sqlite-autoconf-3480000.tar.gz
           tar xzf sqlite-autoconf-3480000.tar.gz
           cd sqlite-autoconf-3480000
-          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
+          ./configure --prefix=/usr/local --host=$HOST
           make -j$(nproc)
           sudo make install
           cd ..
@@ -115,7 +116,7 @@ jobs:
           wget https://libssh2.org/download/libssh2-1.11.1.tar.gz
           tar xzf libssh2-1.11.1.tar.gz
           cd libssh2-1.11.1
-          ./configure --prefix=/usr/local --with-openssl --host=${{ matrix.arch }}-linux-gnu
+          ./configure --prefix=/usr/local --with-openssl --host=$HOST
           make -j$(nproc)
           sudo make install
           cd ..
@@ -153,7 +154,7 @@ jobs:
             --with-libcares \
             --with-sqlite3 \
             --with-libssh2 \
-            --host=${{ matrix.arch }}-linux-gnu
+            --host=$HOST
           make -j$(nproc)
           sudo make install
           cd ..
