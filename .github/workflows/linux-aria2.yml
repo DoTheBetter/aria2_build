@@ -9,7 +9,6 @@ on:
   workflow_dispatch:
 
 env:
-  # 定义依赖库的版本
   CARES_VERSION: "1.34.4"
   EXPAT_VERSION: "2.6.4"
   ZLIB_VERSION: "1.3.1"
@@ -54,35 +53,29 @@ jobs:
             export CXX="g++"
             export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-amd64"
-            # 安装 gcc-multilib 用于 amd64 和 386
             sudo apt-get install -y gcc-multilib
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             export CC="aarch64-linux-gnu-gcc"
             export CXX="aarch64-linux-gnu-g++"
             export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-arm64"
-            # 安装 arm64 交叉编译工具链
             sudo apt-get install -y gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu
-            export HOST="aarch64-linux-gnu"  # 设置正确的目标架构名称
+            export HOST="aarch64-linux-gnu"
           elif [ "${{ matrix.arch }}" = "386" ]; then
             export CC="gcc -m32"
             export CXX="g++ -m32"
             export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-386"
-            # 安装 gcc-multilib 用于 386
             sudo apt-get install -y gcc-multilib
-            export HOST="i386-linux-gnu"  # 设置正确的目标架构名称
+            export HOST="i386-linux-gnu"
           elif [ "${{ matrix.arch }}" = "armv7" ]; then
             export CC="arm-linux-gnueabihf-gcc"
             export CXX="arm-linux-gnueabihf-g++"
             export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
             export ARCH_SUFFIX="linux-armv7"
-            # 安装 armhf 交叉编译工具链
             sudo apt-get install -y gcc-11-arm-linux-gnueabihf g++-11-arm-linux-gnueabihf
-            export HOST="arm-linux-gnueabihf"  # 设置正确的目标架构名称
+            export HOST="arm-linux-gnueabihf"
           fi
-
-          echo "ARCH_SUFFIX is set to: $ARCH_SUFFIX"
           echo "ARCH_SUFFIX=$ARCH_SUFFIX" >> $GITHUB_ENV
 
       - name: Build and install OpenSSL
@@ -115,10 +108,8 @@ jobs:
 
       - name: Build and install expat
         run: |
-          # 将 EXPAT_VERSION 从 2.6.4 转换为 R_2_6_4
           EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
           EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
-          
           wget https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
           tar xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
           cd expat-${{ env.EXPAT_VERSION }}
@@ -177,21 +168,11 @@ jobs:
         run: |
           git clone https://github.com/aria2/aria2.git
           cd aria2
-
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
-            echo "Applying patches from $GITHUB_WORKSPACE/patch..."
             for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
-              echo "Applying patch: $patch_file"
-              if ! patch -p1 < "$patch_file"; then
-                echo "Failed to apply patch: $patch_file"
-                echo "Check the patch file and ensure it is compatible with the current aria2 version."
-                exit 1
-              fi
+              patch -p1 < "$patch_file" || exit 1
             done
-          else
-            echo "No patch directory found, skipping patch application."
           fi
-
           autoreconf -f -i
           if [ -n "$HOST" ]; then
             ./configure \
@@ -235,28 +216,14 @@ jobs:
 
       - name: Verify aria2 compilation
         run: |
-          /usr/local/bin/aria2c --version
-          if [ $? -eq 0 ]; then
-            echo "aria2 compilation verified successfully!"
-          else
-            echo "aria2 compilation failed!"
-            exit 1
-          fi
+          make check
+          /usr/local/bin/aria2c --version || exit 1
 
       - name: Package aria2 binary
-        env:
-          ARCH_SUFFIX: ${{ env.ARCH_SUFFIX }}
         run: |
           mkdir -p release
-          # 复制编译好的 aria2c 二进制文件
-          if [ -f "/usr/local/bin/aria2c" ]; then
-            cp /usr/local/bin/aria2c "release/aria2c-$ARCH_SUFFIX"
-            strip "release/aria2c-$ARCH_SUFFIX"
-            echo "aria2c binary copied to release/aria2c-$ARCH_SUFFIX"
-          else
-            echo "aria2c binary not found at /usr/local/bin/aria2c!"
-            exit 1
-          fi
+          cp /usr/local/bin/aria2c "release/aria2c-${{ env.ARCH_SUFFIX }}"
+          strip "release/aria2c-${{ env.ARCH_SUFFIX }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

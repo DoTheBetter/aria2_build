@@ -26,32 +26,15 @@ jobs:
 
       - name: Build and configure aria2
         run: |
-          # 克隆 aria2 源代码
           git clone https://github.com/aria2/aria2.git
           cd aria2
-
-          # 应用补丁（如果有）
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
-            echo "Applying patches from $GITHUB_WORKSPACE/patch..."
             for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
-              echo "Applying patch: $patch_file"
-              if ! patch -p1 < "$patch_file"; then
-                echo "Failed to apply patch: $patch_file"
-                echo "Check the patch file and ensure it is compatible with the current aria2 version."
-                exit 1
-              fi
+              patch -p1 < "$patch_file" || exit 1
             done
-          else
-            echo "No patch directory found, skipping patch application."
           fi
-
-          # 生成配置脚本
           autoreconf -i
-
-          # 配置 aria2（使用 AppleTLS）
-          ./configure \
-            --enable-static \
-            --disable-shared
+          ./configure --enable-static --disable-shared
 
       - name: Build aria2
         run: |
@@ -61,8 +44,8 @@ jobs:
       - name: Test aria2
         run: |
           cd aria2
-          ./src/aria2c --version
           make check
+          ./src/aria2c --version
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
