@@ -218,16 +218,22 @@ jobs:
         run: |
           mkdir -p release
           # 复制编译好的 aria2c 二进制文件
-          cp /usr/local/bin/aria2c release/aria2c-$ARCH_SUFFIX
-          strip release/aria2c-$ARCH_SUFFIX
+          if [ -f "/usr/local/bin/aria2c" ]; then
+            cp /usr/local/bin/aria2c release/aria2c-$ARCH_SUFFIX
+            strip release/aria2c-$ARCH_SUFFIX
+            echo "aria2c binary copied to release/aria2c-$ARCH_SUFFIX"
+          else
+            echo "aria2c binary not found at /usr/local/bin/aria2c!"
+            exit 1
+          fi
 
           # 复制 aria2 仓库下的 src/OptionHandlerFactory.cc 文件
           if [ -f "aria2/src/OptionHandlerFactory.cc" ]; then
             cp aria2/src/OptionHandlerFactory.cc release/OptionHandlerFactory.cc-$ARCH_SUFFIX
-            echo "OptionHandlerFactory.cc copied successfully."
+            echo "OptionHandlerFactory.cc copied to release/OptionHandlerFactory.cc-$ARCH_SUFFIX"
           else
-            echo "OptionHandlerFactory.cc not found!"
-            exit 1  # 如果文件不存在，退出并报错
+            echo "OptionHandlerFactory.cc not found in aria2/src!"
+            exit 1
           fi
 
       - name: Upload artifact
