@@ -153,7 +153,11 @@ jobs:
             echo "Applying patches from $GITHUB_WORKSPACE/patch..."
             for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
               echo "Applying patch: $patch_file"
-              patch -p1 < "$patch_file"
+              if ! patch -p1 < "$patch_file"; then
+                echo "Failed to apply patch: $patch_file"
+                echo "Check the patch file and ensure it is compatible with the current aria2 version."
+                exit 1
+              fi
             done
           else
             echo "No patch directory found, skipping patch application."
