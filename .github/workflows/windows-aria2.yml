@@ -1,0 +1,144 @@
+name: Build aria2 with Schannel for Windows (64/32-bit)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/windows-aria2.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x86_64, i686]  # 64-bit and 32-bit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          repository: aria2/aria2  # 拉取官方仓库
+          path: aria2-official     # 将官方仓库检出到 aria2-official 目录
+
+      - name: Apply patches
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # 应用补丁文件（假设补丁文件位于仓库根目录的 patches/ 目录下）
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+
+      - name: Set up MSYS2
+        shell: bash
+        run: |
+          # Download and install MSYS2
+          Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-base-x86_64-latest.sfx.exe" -OutFile "msys2.exe"
+          .\msys2.exe -y -oC:\
+          C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
+          C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Su"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          # Install MinGW toolchain and dependencies
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain \
+              mingw-w64-x86_64-zlib \
+              mingw-w64-x86_64-libssh2 \
+              mingw-w64-x86_64-sqlite3 \
+              mingw-w64-x86_64-c-ares \
+              mingw-w64-x86_64-libxml2 \
+              mingw-w64-x86_64-expat \
+              mingw-w64-x86_64-nettle \
+              mingw-w64-x86_64-gmp"
+          else
+            C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
+              mingw-w64-i686-zlib \
+              mingw-w64-i686-libssh2 \
+              mingw-w64-i686-sqlite3 \
+              mingw-w64-i686-c-ares \
+              mingw-w64-i686-libxml2 \
+              mingw-w64-i686-expat \
+              mingw-w64-i686-nettle \
+              mingw-w64-i686-gmp"
+          fi
+
+      - name: Set up build environment
+        shell: bash
+        run: |
+          # Set up environment variables
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            echo "MSYSTEM=MINGW64" >> $GITHUB_ENV
+            echo "MINGW_PREFIX=/mingw64" >> $GITHUB_ENV
+          else
+            echo "MSYSTEM=MINGW32" >> $GITHUB_ENV
+            echo "MINGW_PREFIX=/mingw32" >> $GITHUB_ENV
+          fi
+
+      - name: Build aria2
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # Generate configure script
+          autoreconf -i
+
+          # Configure and build aria2 with recommended options
+          ./configure \
+            --host=${{ matrix.arch }}-w64-mingw32 \
+            --enable-static \
+            --disable-shared \
+            --with-libxml2 \
+            --with-libssh2 \
+            --with-sqlite3 \
+            --with-c-ares \
+            --with-zlib \
+            --with-gmp \
+            --with-nettle \
+            --with-expat
+
+          make -j$(nproc)
+
+      - name: Run unit tests (make check)
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # 运行单元测试
+          make check
+
+      - name: Check aria2c version
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # Output aria2c version to verify build success
+          ./src/aria2c --version
+
+      - name: Package artifacts
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # Create a distribution directory
+          mkdir -p dist/${{ matrix.arch }}
+          cp src/aria2c.exe dist/${{ matrix.arch }}/
+
+          # Package into a ZIP file
+          zip -r dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip dist/${{ matrix.arch }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: aria2-${{ matrix.arch }}-windows-static-recommended
+          path: aria2-official/dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip
