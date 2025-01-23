@@ -75,6 +75,8 @@ jobs:
 
           # 打印 ARCH_SUFFIX 的值，用于调试
           echo "ARCH_SUFFIX is set to: $ARCH_SUFFIX"
+          # 将 ARCH_SUFFIX 设置为环境变量，以便后续步骤使用
+          echo "ARCH_SUFFIX=$ARCH_SUFFIX" >> $GITHUB_ENV
 
       - name: Build and install c-ares
         run: |
@@ -218,6 +220,8 @@ jobs:
           fi
 
       - name: Package aria2 binary and source files
+        env:
+          ARCH_SUFFIX: ${{ env.ARCH_SUFFIX }}  # 显式传递 ARCH_SUFFIX
         run: |
           mkdir -p release
           # 复制编译好的 aria2c 二进制文件
@@ -242,7 +246,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aria2-$ARCH_SUFFIX
+          name: aria2-${{ env.ARCH_SUFFIX }}
           path: |
-            release/aria2c-$ARCH_SUFFIX
-            release/OptionHandlerFactory.cc-$ARCH_SUFFIX
+            release/aria2c-${{ env.ARCH_SUFFIX }}
+            release/OptionHandlerFactory.cc-${{ env.ARCH_SUFFIX }}
