@@ -61,7 +61,7 @@ jobs:
               automake \
               libtool \
               make \
-              gettext"
+              mingw-w64-x86_64-gettext"
           else
             /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
               mingw-w64-i686-zlib \
