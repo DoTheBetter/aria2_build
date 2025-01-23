@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # 使用 Ubuntu 22.04 作为基础环境
     strategy:
       matrix:
         arch: [amd64, arm64, 386, armv7]
