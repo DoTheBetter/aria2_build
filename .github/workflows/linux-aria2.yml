@@ -37,12 +37,17 @@ jobs:
             git \
             wget \
             gcc-multilib \
-            gettext  # 安装 gettext，包含 autopoint
+            autopoint  # 直接安装 autopoint
 
       - name: Check if autopoint is available
         run: |
-          which autopoint || echo "autopoint not found!"
-          autopoint --version || echo "autopoint not working!"
+          if ! command -v autopoint &> /dev/null; then
+            echo "autopoint not found! Exiting..."
+            exit 1  # 如果 autopoint 不可用，退出脚本
+          else
+            echo "autopoint is available."
+            autopoint --version
+          fi
 
       - name: Set up environment for ${{ matrix.arch }}
         run: |
