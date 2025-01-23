@@ -48,7 +48,7 @@ jobs:
         run: |
           # 安装 MinGW 工具链和依赖项
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
-            C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain \
+            /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain \
               mingw-w64-x86_64-zlib \
               mingw-w64-x86_64-libssh2 \
               mingw-w64-x86_64-sqlite3 \
@@ -62,7 +62,7 @@ jobs:
               libtool \
               make"
           else
-            C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
+            /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
               mingw-w64-i686-zlib \
               mingw-w64-i686-libssh2 \
               mingw-w64-i686-sqlite3 \
