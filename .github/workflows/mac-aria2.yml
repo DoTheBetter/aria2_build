@@ -1,4 +1,4 @@
-name: Build aria2 with OpenSSL for macOS (64-bit)
+name: Build aria2 with AppleTLS for macOS (64-bit)
 
 on:
   push:
@@ -21,13 +21,8 @@ jobs:
           brew update
           brew install \
             automake autoconf libtool pkg-config \
-            openssl libssh2 zlib sqlite3 c-ares libxml2 \
+            libssh2 zlib sqlite3 c-ares libxml2 \
             nettle gmp cppunit
-
-      - name: Set up OpenSSL environment
-        run: |
-          echo "OPENSSL_ROOT=$(brew --prefix openssl)" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:$(brew --prefix sqlite3)/lib/pkgconfig:$(brew --prefix libssh2)/lib/pkgconfig:$(brew --prefix zlib)/lib/pkgconfig:$(brew --prefix nettle)/lib/pkgconfig:$(brew --prefix gmp)/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Build and configure aria2
         run: |
@@ -53,10 +48,8 @@ jobs:
           # 生成配置脚本
           autoreconf -i
 
-          # 配置 aria2
+          # 配置 aria2（使用 AppleTLS）
           ./configure \
-            --with-openssl \
-            --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
             --enable-static \
             --disable-shared
 
