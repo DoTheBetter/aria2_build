@@ -73,6 +73,9 @@ jobs:
             export HOST="arm-linux-gnueabihf"  # 设置正确的目标架构名称
           fi
 
+          # 打印 ARCH_SUFFIX 的值，用于调试
+          echo "ARCH_SUFFIX is set to: $ARCH_SUFFIX"
+
       - name: Build and install c-ares
         run: |
           wget https://github.com/c-ares/c-ares/releases/download/v1.34.4/c-ares-1.34.4.tar.gz
