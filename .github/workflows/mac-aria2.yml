@@ -22,7 +22,7 @@ jobs:
           brew install \
             automake autoconf libtool pkg-config \
             openssl libssh2 zlib sqlite3 c-ares libxml2 \
-            nettle gmp
+            nettle gmp cppunit
 
       - name: Set up OpenSSL environment
         run: |
