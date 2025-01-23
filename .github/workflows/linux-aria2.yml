@@ -106,9 +106,10 @@ jobs:
           git clone https://github.com/aria2/aria2.git
           cd aria2
 
-          # 应用本仓库 patch 文件夹下的补丁文件
-          if [ -d "../patch" ]; then
-            for patch_file in ../patch/*.patch; do
+          # 检查 patch 文件夹是否存在
+          if [ -d "./patch" ]; then
+            echo "Applying patches from ./patch..."
+            for patch_file in ./patch/*.patch; do
               echo "Applying patch: $patch_file"
               patch -p1 < "$patch_file"
             done
@@ -155,7 +156,13 @@ jobs:
           strip release/aria2c-linux_${{ matrix.arch }}
 
           # 复制 aria2 仓库下的 src/OptionHandlerFactory.cc 文件
-          cp aria2/src/OptionHandlerFactory.cc release/OptionHandlerFactory.cc
+          if [ -f "aria2/src/OptionHandlerFactory.cc" ]; then
+            cp aria2/src/OptionHandlerFactory.cc release/OptionHandlerFactory.cc
+            echo "OptionHandlerFactory.cc copied successfully."
+          else
+            echo "OptionHandlerFactory.cc not found!"
+            exit 1  # 如果文件不存在，退出并报错
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
