@@ -3,7 +3,7 @@ name: Build aria2 with OpenSSL (Linux 64-bit and 32-bit)
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - '**'  # 触发条件：推送任何文件时均触发构建
   workflow_dispatch:  # 增加手工触发
@@ -37,17 +37,7 @@ jobs:
             git \
             wget \
             gcc-multilib \
-            autopoint  # 直接安装 autopoint
-
-      - name: Check if autopoint is available
-        run: |
-          if ! command -v autopoint &> /dev/null; then
-            echo "autopoint not found! Exiting..."
-            exit 1  # 如果 autopoint 不可用，退出脚本
-          else
-            echo "autopoint is available."
-            autopoint --version
-          fi
+            autopoint
 
       - name: Set up environment for ${{ matrix.arch }}
         run: |
@@ -115,7 +105,18 @@ jobs:
         run: |
           git clone https://github.com/aria2/aria2.git
           cd aria2
-          autoreconf -f -i  # 强制重新生成配置文件
+
+          # 应用本仓库 patch 文件夹下的补丁文件
+          if [ -d "../patch" ]; then
+            for patch_file in ../patch/*.patch; do
+              echo "Applying patch: $patch_file"
+              patch -p1 < "$patch_file"
+            done
+          else
+            echo "No patch directory found, skipping patch application."
+          fi
+
+          autoreconf -f -i
           ./configure \
             --prefix=/usr/local \
             --enable-static \
@@ -146,14 +147,20 @@ jobs:
             exit 1
           fi
 
-      - name: Package aria2 binary
+      - name: Package aria2 binary and source files
         run: |
           mkdir -p release
-          cp /usr/local/bin/aria2c release/aria2c-${{ matrix.arch }}
-          strip release/aria2c-${{ matrix.arch }}
+          # 复制编译好的 aria2c 二进制文件
+          cp /usr/local/bin/aria2c release/aria2c-linux_${{ matrix.arch }}
+          strip release/aria2c-linux_${{ matrix.arch }}
+
+          # 复制 aria2 仓库下的 src/OptionHandlerFactory.cc 文件
+          cp aria2/src/OptionHandlerFactory.cc release/OptionHandlerFactory.cc
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: aria2-${{ matrix.arch }}
-          path: release/aria2c-${{ matrix.arch }}
+          name: aria2-linux_${{ matrix.arch }}
+          path: |
+            release/aria2c-linux_${{ matrix.arch }}
+            release/OptionHandlerFactory.cc
