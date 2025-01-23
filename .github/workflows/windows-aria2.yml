@@ -60,7 +60,8 @@ jobs:
               autoconf \
               automake \
               libtool \
-              make"
+              make \
+              gettext"
           else
             /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
               mingw-w64-i686-zlib \
@@ -74,7 +75,8 @@ jobs:
               autoconf \
               automake \
               libtool \
-              make"
+              make \
+              gettext"
           fi
 
       - name: Set up build environment
