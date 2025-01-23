@@ -15,7 +15,7 @@ env:
   SQLITE_VERSION: "3480000"
   LIBSSH2_VERSION: "1.11.1"
   OPENSSL_VERSION: "3.4.0"
-  CPPUNIT_VERSION: "1.13.2"
+  CPPUNIT_VERSION: "1.15.1"
 
 jobs:
   build:
@@ -228,9 +228,13 @@ jobs:
           sudo make install
           cd ..
 
+      - name: Run aria2 tests
+        run: |
+          cd aria2
+          make check
+
       - name: Verify aria2 compilation
         run: |
-          make check
           /usr/local/bin/aria2c --version || exit 1
 
       - name: Package aria2 binary
