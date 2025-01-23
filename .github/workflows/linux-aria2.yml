@@ -1,4 +1,4 @@
-name: Build aria2 with OpenSSL (Linux 64-bit and 32-bit)
+name: Build aria2 with OpenSSL (Multi-Architecture)
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [x86_64, i686]
+        arch: [amd64, arm64, 386, armv7]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -37,18 +37,32 @@ jobs:
             git \
             wget \
             gcc-multilib \
-            autopoint
+            autopoint \
+            crossbuild-essential-arm64 \
+            crossbuild-essential-armhf
 
       - name: Set up environment for ${{ matrix.arch }}
         run: |
-          if [ "${{ matrix.arch }}" = "i686" ]; then
-            export CC="gcc -m32"
-            export CXX="g++ -m32"
-            export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
-          else
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
             export CC="gcc"
             export CXX="g++"
             export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+            export ARCH_SUFFIX="linux-amd64"
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            export CC="aarch64-linux-gnu-gcc"
+            export CXX="aarch64-linux-gnu-g++"
+            export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
+            export ARCH_SUFFIX="linux-arm64"
+          elif [ "${{ matrix.arch }}" = "386" ]; then
+            export CC="gcc -m32"
+            export CXX="g++ -m32"
+            export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
+            export ARCH_SUFFIX="linux-386"
+          elif [ "${{ matrix.arch }}" = "armv7" ]; then
+            export CC="arm-linux-gnueabihf-gcc"
+            export CXX="arm-linux-gnueabihf-g++"
+            export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
+            export ARCH_SUFFIX="linux-armv7"
           fi
 
       - name: Build and install c-ares
@@ -56,7 +70,7 @@ jobs:
           wget https://github.com/c-ares/c-ares/releases/download/v1.34.4/c-ares-1.34.4.tar.gz
           tar xzf c-ares-1.34.4.tar.gz
           cd c-ares-1.34.4
-          ./configure --prefix=/usr/local
+          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
@@ -66,7 +80,7 @@ jobs:
           wget https://github.com/libexpat/libexpat/releases/download/R_2_6_4/expat-2.6.4.tar.gz
           tar xzf expat-2.6.4.tar.gz
           cd expat-2.6.4
-          ./configure --prefix=/usr/local
+          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
@@ -76,7 +90,7 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar xzf zlib-1.3.1.tar.gz
           cd zlib-1.3.1
-          ./configure --prefix=/usr/local
+          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
@@ -86,7 +100,7 @@ jobs:
           wget https://www.sqlite.org/2025/sqlite-autoconf-3480000.tar.gz
           tar xzf sqlite-autoconf-3480000.tar.gz
           cd sqlite-autoconf-3480000
-          ./configure --prefix=/usr/local
+          ./configure --prefix=/usr/local --host=${{ matrix.arch }}-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
@@ -96,7 +110,7 @@ jobs:
           wget https://libssh2.org/download/libssh2-1.11.1.tar.gz
           tar xzf libssh2-1.11.1.tar.gz
           cd libssh2-1.11.1
-          ./configure --prefix=/usr/local --with-openssl
+          ./configure --prefix=/usr/local --with-openssl --host=${{ matrix.arch }}-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
@@ -107,9 +121,9 @@ jobs:
           cd aria2
 
           # 检查 patch 文件夹是否存在
-          if [ -d "./patch" ]; then
-            echo "Applying patches from ./patch..."
-            for patch_file in ./patch/*.patch; do
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            echo "Applying patches from $GITHUB_WORKSPACE/patch..."
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
               echo "Applying patch: $patch_file"
               patch -p1 < "$patch_file"
             done
@@ -133,7 +147,8 @@ jobs:
             --with-libz \
             --with-libcares \
             --with-sqlite3 \
-            --with-libssh2
+            --with-libssh2 \
+            --host=${{ matrix.arch }}-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
@@ -152,12 +167,12 @@ jobs:
         run: |
           mkdir -p release
           # 复制编译好的 aria2c 二进制文件
-          cp /usr/local/bin/aria2c release/aria2c-linux_${{ matrix.arch }}
-          strip release/aria2c-linux_${{ matrix.arch }}
+          cp /usr/local/bin/aria2c release/aria2c-$ARCH_SUFFIX
+          strip release/aria2c-$ARCH_SUFFIX
 
           # 复制 aria2 仓库下的 src/OptionHandlerFactory.cc 文件
           if [ -f "aria2/src/OptionHandlerFactory.cc" ]; then
-            cp aria2/src/OptionHandlerFactory.cc release/OptionHandlerFactory.cc
+            cp aria2/src/OptionHandlerFactory.cc release/OptionHandlerFactory.cc-$ARCH_SUFFIX
             echo "OptionHandlerFactory.cc copied successfully."
           else
             echo "OptionHandlerFactory.cc not found!"
@@ -167,7 +182,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aria2-linux_${{ matrix.arch }}
+          name: aria2-$ARCH_SUFFIX
           path: |
-            release/aria2c-linux_${{ matrix.arch }}
-            release/OptionHandlerFactory.cc
+            release/aria2c-$ARCH_SUFFIX
+            release/OptionHandlerFactory.cc-$ARCH_SUFFIX
