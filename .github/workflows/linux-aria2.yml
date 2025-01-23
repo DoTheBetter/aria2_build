@@ -18,7 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Install common dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -36,10 +36,7 @@ jobs:
             libcppunit-dev \
             git \
             wget \
-            gcc-multilib \
-            autopoint \
-            crossbuild-essential-arm64 \
-            crossbuild-essential-armhf
+            autopoint
 
       - name: Set up environment for ${{ matrix.arch }}
         run: |
@@ -48,21 +45,29 @@ jobs:
             export CXX="g++"
             export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-amd64"
+            # 安装 gcc-multilib 用于 amd64 和 386
+            sudo apt-get install -y gcc-multilib
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             export CC="aarch64-linux-gnu-gcc"
             export CXX="aarch64-linux-gnu-g++"
             export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-arm64"
+            # 安装 arm64 交叉编译工具链
+            sudo apt-get install -y gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu
           elif [ "${{ matrix.arch }}" = "386" ]; then
             export CC="gcc -m32"
             export CXX="g++ -m32"
             export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-386"
+            # 安装 gcc-multilib 用于 386
+            sudo apt-get install -y gcc-multilib
           elif [ "${{ matrix.arch }}" = "armv7" ]; then
             export CC="arm-linux-gnueabihf-gcc"
             export CXX="arm-linux-gnueabihf-g++"
             export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
             export ARCH_SUFFIX="linux-armv7"
+            # 安装 armhf 交叉编译工具链
+            sudo apt-get install -y gcc-11-arm-linux-gnueabihf g++-11-arm-linux-gnueabihf
           fi
 
       - name: Build and install c-ares
