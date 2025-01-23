@@ -15,6 +15,7 @@ env:
   SQLITE_VERSION: "3480000"
   LIBSSH2_VERSION: "1.11.1"
   OPENSSL_VERSION: "3.4.0"
+  CPPUNIT_VERSION: "1.13.2"
 
 jobs:
   build:
@@ -41,7 +42,6 @@ jobs:
             libc-ares-dev \
             libsqlite3-dev \
             zlib1g-dev \
-            libcppunit-dev \  # 添加 CppUnit 依赖
             git \
             wget \
             autopoint
@@ -77,6 +77,20 @@ jobs:
             export HOST="arm-linux-gnueabihf"
           fi
           echo "ARCH_SUFFIX=$ARCH_SUFFIX" >> $GITHUB_ENV
+
+      - name: Build and install CppUnit
+        run: |
+          wget http://dev-www.libreoffice.org/src/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
+          tar xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
+          cd cppunit-${{ env.CPPUNIT_VERSION }}
+          if [ -n "$HOST" ]; then
+            ./configure --prefix=/usr/local --host=$HOST
+          else
+            ./configure --prefix=/usr/local
+          fi
+          make -j$(nproc)
+          sudo make install
+          cd ..
 
       - name: Build and install OpenSSL
         run: |
@@ -214,14 +228,9 @@ jobs:
           sudo make install
           cd ..
 
-      - name: Run unit tests (make check)
-        run: |
-          cd aria2
-          make check || exit 1  # 运行单元测试，如果失败则退出
-          cd ..
-
       - name: Verify aria2 compilation
         run: |
+          make check
           /usr/local/bin/aria2c --version || exit 1
 
       - name: Package aria2 binary
