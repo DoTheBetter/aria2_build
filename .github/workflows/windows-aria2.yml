@@ -8,11 +8,6 @@ on:
       - '.github/workflows/windows-aria2.yml'
   workflow_dispatch:
 
-# 设置默认的 shell 为 PowerShell
-defaults:
-  run:
-    shell: pwsh
-
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -27,22 +22,20 @@ jobs:
           path: aria2-official     # 将官方仓库检出到 aria2-official 目录
 
       - name: Apply patches
+        shell: bash
         run: |
           # 切换到官方仓库目录
-          Set-Location -Path aria2-official
+          cd aria2-official
 
-          # 应用补丁文件（假设补丁文件位于仓库根目录的 patch/ 目录下）
-          if (Test-Path -Path "$env:GITHUB_WORKSPACE\patch") {
-            Get-ChildItem -Path "$env:GITHUB_WORKSPACE\patch\*.patch" | ForEach-Object {
-              git apply $_.FullName
-              if ($LASTEXITCODE -ne 0) {
-                Write-Error "Failed to apply patch: $($_.FullName)"
-                exit 1
-              }
-            }
-          }
+          # 应用补丁文件（假设补丁文件位于仓库根目录的 patches/ 目录下）
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
 
       - name: Set up MSYS2
+        shell: pwsh
         run: |
           # 下载并安装 MSYS2
           Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-base-x86_64-latest.sfx.exe" -OutFile "msys2.exe"
@@ -51,9 +44,10 @@ jobs:
           C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Su"
 
       - name: Install dependencies
+        shell: bash
         run: |
           # 安装 MinGW 工具链和依赖项
-          if ("${{ matrix.arch }}" -eq "x86_64") {
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
             C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain \
               mingw-w64-x86_64-zlib \
               mingw-w64-x86_64-libssh2 \
@@ -62,8 +56,12 @@ jobs:
               mingw-w64-x86_64-libxml2 \
               mingw-w64-x86_64-expat \
               mingw-w64-x86_64-nettle \
-              mingw-w64-x86_64-gmp"
-          } else {
+              mingw-w64-x86_64-gmp \
+              autoconf \
+              automake \
+              libtool \
+              make"
+          else
             C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
               mingw-w64-i686-zlib \
               mingw-w64-i686-libssh2 \
@@ -72,30 +70,36 @@ jobs:
               mingw-w64-i686-libxml2 \
               mingw-w64-i686-expat \
               mingw-w64-i686-nettle \
-              mingw-w64-i686-gmp"
-          }
+              mingw-w64-i686-gmp \
+              autoconf \
+              automake \
+              libtool \
+              make"
+          fi
 
       - name: Set up build environment
+        shell: bash
         run: |
           # 设置环境变量
-          if ("${{ matrix.arch }}" -eq "x86_64") {
-            echo "MSYSTEM=MINGW64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            echo "MINGW_PREFIX=/mingw64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          } else {
-            echo "MSYSTEM=MINGW32" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            echo "MINGW_PREFIX=/mingw32" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          }
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            echo "MSYSTEM=MINGW64" >> $GITHUB_ENV
+            echo "MINGW_PREFIX=/mingw64" >> $GITHUB_ENV
+          else
+            echo "MSYSTEM=MINGW32" >> $GITHUB_ENV
+            echo "MINGW_PREFIX=/mingw32" >> $GITHUB_ENV
+          fi
 
       - name: Build aria2
+        shell: bash
         run: |
           # 切换到官方仓库目录
-          Set-Location -Path aria2-official
+          cd aria2-official
 
           # 生成 configure 脚本
-          bash -lc "autoreconf -i"
+          autoreconf -i
 
           # 配置并构建 aria2，启用推荐的选项
-          bash -lc "./configure \
+          ./configure \
             --host=${{ matrix.arch }}-w64-mingw32 \
             --enable-static \
             --disable-shared \
@@ -106,37 +110,40 @@ jobs:
             --with-zlib \
             --with-gmp \
             --with-nettle \
-            --with-expat"
+            --with-expat
 
-          bash -lc "make -j$(nproc)"
+          make -j$(nproc)
 
       - name: Run unit tests (make check)
+        shell: bash
         run: |
           # 切换到官方仓库目录
-          Set-Location -Path aria2-official
+          cd aria2-official
 
           # 运行单元测试
-          bash -lc "make check"
+          make check
 
       - name: Check aria2c version
+        shell: bash
         run: |
           # 切换到官方仓库目录
-          Set-Location -Path aria2-official
+          cd aria2-official
 
           # 输出 aria2c 版本以验证构建成功
-          bash -lc "./src/aria2c --version"
+          ./src/aria2c --version
 
       - name: Package artifacts
+        shell: bash
         run: |
           # 切换到官方仓库目录
-          Set-Location -Path aria2-official
+          cd aria2-official
 
           # 创建分发目录
-          New-Item -ItemType Directory -Path "dist\${{ matrix.arch }}" -Force
-          Copy-Item -Path "src\aria2c.exe" -Destination "dist\${{ matrix.arch }}\"
+          mkdir -p dist/${{ matrix.arch }}
+          cp src/aria2c.exe dist/${{ matrix.arch }}/
 
           # 打包成 ZIP 文件
-          Compress-Archive -Path "dist\${{ matrix.arch }}" -DestinationPath "dist\aria2-${{ matrix.arch }}-windows-static-recommended.zip"
+          zip -r dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip dist/${{ matrix.arch }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
