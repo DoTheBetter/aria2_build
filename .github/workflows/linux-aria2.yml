@@ -55,7 +55,7 @@ jobs:
           wget https://github.com/c-ares/c-ares/releases/download/v1.34.4/c-ares-1.34.4.tar.gz
           tar xzf c-ares-1.34.4.tar.gz
           cd c-ares-1.34.4
-          ./configure --prefix=/usr/local --disable-shared --enable-static
+          ./configure --prefix=/usr/local
           make -j$(nproc)
           sudo make install
           cd ..
@@ -65,7 +65,7 @@ jobs:
           wget https://github.com/libexpat/libexpat/releases/download/R_2_6_4/expat-2.6.4.tar.gz
           tar xzf expat-2.6.4.tar.gz
           cd expat-2.6.4
-          ./configure --prefix=/usr/local --disable-shared --enable-static
+          ./configure --prefix=/usr/local
           make -j$(nproc)
           sudo make install
           cd ..
@@ -75,7 +75,7 @@ jobs:
           wget https://zlib.net/zlib-1.3.1.tar.gz
           tar xzf zlib-1.3.1.tar.gz
           cd zlib-1.3.1
-          ./configure --prefix=/usr/local --static
+          ./configure --prefix=/usr/local
           make -j$(nproc)
           sudo make install
           cd ..
@@ -85,7 +85,7 @@ jobs:
           wget https://www.sqlite.org/2025/sqlite-autoconf-3480000.tar.gz
           tar xzf sqlite-autoconf-3480000.tar.gz
           cd sqlite-autoconf-3480000
-          ./configure --prefix=/usr/local --disable-shared --enable-static
+          ./configure --prefix=/usr/local
           make -j$(nproc)
           sudo make install
           cd ..
@@ -93,14 +93,14 @@ jobs:
       - name: Build and install libssh2
         run: |
           wget https://libssh2.org/download/libssh2-1.11.1.tar.gz
-          tar libssh2-1.11.1.tar.gz
+          tar xzf libssh2-1.11.1.tar.gz
           cd libssh2-1.11.1
-          ./configure --prefix=/usr/local --disable-shared --enable-static --with-openssl
+          ./configure --prefix=/usr/local --with-openssl
           make -j$(nproc)
           sudo make install
           cd ..
 
-      - name: Build and install aria2
+      - name: Build and install aria2 (static)
         run: |
           git clone https://github.com/aria2/aria2.git
           cd aria2
@@ -134,7 +134,7 @@ jobs:
             echo "aria2 compilation failed!"
             exit 1
           fi
-          
+
       - name: Package aria2 binary
         run: |
           mkdir -p release
