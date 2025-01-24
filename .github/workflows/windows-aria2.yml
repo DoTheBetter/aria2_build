@@ -26,6 +26,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Clean up existing MSYS2 installation
+        shell: bash
+        run: |
+          # 删除现有的 MSYS2 目录
+          if [ -d "C:/msys64" ]; then
+            rm -rf C:/msys64
+          fi
+
       - name: Download and install MSYS2
         shell: bash
         run: |
