@@ -62,7 +62,7 @@ jobs:
           curl -L -o expat-${{ env.EXPAT_VERSION }}.tar.gz https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
           curl -L -o sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
           curl -L -o zlib-${{ env.ZLIB_VERSION }}.tar.gz https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
-          curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
+          curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz     
           curl -L -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
 
           # 验证下载的文件是否有效
