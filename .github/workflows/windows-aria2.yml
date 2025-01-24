@@ -41,6 +41,8 @@ jobs:
           # Extract and build GMP
           tar xf gmp-6.3.0.tar.xz
           cd gmp-6.3.0
+          sudo mkdir -p /usr/local/${{ matrix.host }}
+          sudo chown -R $USER:$USER /usr/local/${{ matrix.host }}
           ./configure \
             --disable-shared \
             --enable-static \
@@ -49,7 +51,8 @@ jobs:
             --disable-cxx \
             --enable-fat \
             CFLAGS="-mtune=generic -O2 -g0"
-          make -j$(nproc) install
+          make -j$(nproc)
+          sudo make install
           cd ..
 
           # Extract and build Expat
@@ -61,7 +64,8 @@ jobs:
             --prefix=/usr/local/${{ matrix.host }} \
             --host=${{ matrix.host }} \
             --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-          make -j$(nproc) install
+          make -j$(nproc)
+          sudo make install
           cd ..
 
           # Extract and build SQLite
@@ -73,7 +77,8 @@ jobs:
             --prefix=/usr/local/${{ matrix.host }} \
             --host=${{ matrix.host }} \
             --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-          make -j$(nproc) install
+          make -j$(nproc)
+          sudo make install
           cd ..
 
           # Extract and build Zlib
@@ -89,7 +94,8 @@ jobs:
             --libdir=/usr/local/${{ matrix.host }}/lib \
             --includedir=/usr/local/${{ matrix.host }}/include \
             --static
-          make -j$(nproc) install
+          make -j$(nproc)
+          sudo make install
           cd ..
 
           # Extract and build c-ares
@@ -103,7 +109,8 @@ jobs:
             --host=${{ matrix.host }} \
             --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
             LIBS="-lws2_32"
-          make -j$(nproc) install
+          make -j$(nproc)
+          sudo make install
           cd ..
 
           # Extract and build libssh2
@@ -116,7 +123,8 @@ jobs:
             --host=${{ matrix.host }} \
             --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
             LIBS="-lws2_32"
-          make -j$(nproc) install
+          make -j$(nproc)
+          sudo make install
           cd ..
 
       - name: Clone and build aria2
