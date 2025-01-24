@@ -1,12 +1,12 @@
-name: Build Static aria2c Windows Binaries
+name: Build aria2 with Schannel for Windows (64/32-bit)
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - master
+    paths:
+      - '.github/workflows/windows-aria2.yml'
+  workflow_dispatch:
 
 jobs:
   build:
