@@ -88,18 +88,18 @@ jobs:
       - name: Download and install archive.dir.tar.xz
         shell: bash
         run: |
-          # 手动下载 gettext 源码包
-          wget https://ftpmirror.gnu.org/gettext/gettext-0.22.4.tar.xz -O gettext.tar.xz
+          # 在 MSYS2 环境中使用 wget 下载 gettext 源码包
+          /c/msys64/usr/bin/bash -lc "wget https://ftpmirror.gnu.org/gettext/gettext-0.22.4.tar.xz -O gettext.tar.xz"
 
           # 解压 gettext 源码包
-          tar -xf gettext.tar.xz
+          /c/msys64/usr/bin/bash -lc "tar -xf gettext.tar.xz"
 
           # 找到 archive.dir.tar.xz 文件
-          ARCHIVE_DIR=$(find gettext-* -name "archive.dir.tar.xz")
+          ARCHIVE_DIR=$(/c/msys64/usr/bin/bash -lc "find gettext-* -name 'archive.dir.tar.xz'")
 
           # 将 archive.dir.tar.xz 文件复制到 /usr/share/gettext/ 目录
-          sudo mkdir -p /usr/share/gettext
-          sudo cp "$ARCHIVE_DIR" /usr/share/gettext/
+          /c/msys64/usr/bin/bash -lc "sudo mkdir -p /usr/share/gettext"
+          /c/msys64/usr/bin/bash -lc "sudo cp '$ARCHIVE_DIR' /usr/share/gettext/"
 
       - name: Set up build environment
         shell: bash
