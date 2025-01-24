@@ -58,12 +58,12 @@ jobs:
           EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
 
           # 下载依赖源码
-          curl -O https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.xz
-          curl -O https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
-          curl -O https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
-          curl -O https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
-          curl -O https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
-          curl -O https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+          curl -L -O https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.gz
+          curl -L -O https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
+          curl -L -O https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          curl -L -O https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          curl -L -O https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
+          curl -L -O https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
 
           # 解压源码
           tar -xf gmp-${{ env.GMP_VERSION }}.tar.xz
