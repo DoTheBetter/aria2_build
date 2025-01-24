@@ -1,167 +1,138 @@
-name: Build aria2 with Schannel for Windows (64/32-bit)
+name: Build Static aria2c Windows Binaries
 
 on:
   push:
     branches:
-      - master
-    paths:
-      - '.github/workflows/windows-aria2.yml'
-  workflow_dispatch:
-
-env:
-  GMP_VERSION: 6.3.0
-  EXPAT_VERSION: 2.6.4
-  SQLITE_VERSION: 3480000
-  ZLIB_VERSION: 1.3.1
-  CARES_VERSION: 1.34.4
-  LIBSSH2_VERSION: 1.11.1
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [x86_64, i686]
+        host: [i686-w64-mingw32, x86_64-w64-mingw32]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Add MSYS2 to PATH
-        shell: bash
+      - name: Set up environment for ${{ matrix.host }}
         run: |
-          # 将 MSYS2 的 usr/bin 目录添加到 PATH
-          echo "C:/msys64/usr/bin" >> $GITHUB_PATH
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make binutils autoconf automake autotools-dev libtool \
+            patch ca-certificates \
+            pkg-config git curl dpkg-dev gcc-mingw-w64 g++-mingw-w64 \
+            autopoint libcppunit-dev libxml2-dev libgcrypt20-dev lzip \
+            python3-docutils
 
-      - name: Verify MSYS2 installation
-        shell: bash
+      - name: Download and build dependencies
         run: |
-          # 检查 pacman 是否可用
-          pacman --version
+          # Download dependencies
+          curl -L -O https://gmplib.org/download/gmp/gmp-6.3.0.tar.xz
+          curl -L -O https://github.com/libexpat/libexpat/releases/download/R_2_5_0/expat-2.5.0.tar.bz2
+          curl -L -O https://www.sqlite.org/2023/sqlite-autoconf-3430100.tar.gz
+          curl -L -O https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+          curl -L -O https://github.com/c-ares/c-ares/releases/download/cares-1_19_1/c-ares-1.19.1.tar.gz
+          curl -L -O https://libssh2.org/download/libssh2-1.11.0.tar.bz2
 
-      - name: Update MSYS2 and install basic tools
-        shell: bash
+          # Extract and build GMP
+          tar xf gmp-6.3.0.tar.xz
+          cd gmp-6.3.0
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --disable-cxx \
+            --enable-fat \
+            CFLAGS="-mtune=generic -O2 -g0"
+          make -j$(nproc) install
+          cd ..
+
+          # Extract and build Expat
+          tar xf expat-2.5.0.tar.bz2
+          cd expat-2.5.0
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+          make -j$(nproc) install
+          cd ..
+
+          # Extract and build SQLite
+          tar xf sqlite-autoconf-3430100.tar.gz
+          cd sqlite-autoconf-3430100
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+          make -j$(nproc) install
+          cd ..
+
+          # Extract and build Zlib
+          tar xf zlib-1.3.1.tar.gz
+          cd zlib-1.3.1
+          CC=${{ matrix.host }}-gcc \
+          AR=${{ matrix.host }}-ar \
+          LD=${{ matrix.host }}-ld \
+          RANLIB=${{ matrix.host }}-ranlib \
+          STRIP=${{ matrix.host }}-strip \
+          ./configure \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --libdir=/usr/local/${{ matrix.host }}/lib \
+            --includedir=/usr/local/${{ matrix.host }}/include \
+            --static
+          make -j$(nproc) install
+          cd ..
+
+          # Extract and build c-ares
+          tar xf c-ares-1.19.1.tar.gz
+          cd c-ares-1.19.1
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --without-random \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
+            LIBS="-lws2_32"
+          make -j$(nproc) install
+          cd ..
+
+          # Extract and build libssh2
+          tar xf libssh2-1.11.0.tar.bz2
+          cd libssh2-1.11.0
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
+            LIBS="-lws2_32"
+          make -j$(nproc) install
+          cd ..
+
+      - name: Clone and build aria2
         run: |
-          # 更新 MSYS2
-          pacman -Syu --noconfirm
-          pacman -Su --noconfirm
-
-          # 安装基本工具
-          pacman -S --noconfirm --needed base-devel mingw-w64-${{ matrix.arch }}-toolchain autoconf automake libtool pkg-config
-
-      - name: Download dependency sources
-        shell: bash
-        run: |
-          mkdir -p ~/aria2-deps
-          cd ~/aria2-deps
-          
-          EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
-          EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
-
-          # 下载依赖源码
-          curl -L -o gmp-${{ env.GMP_VERSION }}.tar.gz https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.gz
-          curl -L -o expat-${{ env.EXPAT_VERSION }}.tar.gz https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
-          curl -L -o sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
-          curl -L -o zlib-${{ env.ZLIB_VERSION }}.tar.gz https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
-          curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz     
-          curl -L -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
-
-          # 验证下载的文件是否有效
-          for file in *.tar.gz; do
-            if ! tar -tzf "$file" >/dev/null 2>&1; then
-              echo "Error: $file is not a valid gzip archive."
-              exit 1
-            fi
-          done
-
-          # 解压源码
-          tar -xzf gmp-${{ env.GMP_VERSION }}.tar.gz
-          tar -xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
-          tar -xzf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
-          tar -xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
-          tar -xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
-          tar -xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
-
-      - name: Build and install GMP
-        shell: bash
-        run: |
-          cd ~/aria2-deps/gmp-${{ env.GMP_VERSION }}
-          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
-          make -j$(nproc)
-          make install
-
-      - name: Build and install Expat
-        shell: bash
-        run: |
-          cd ~/aria2-deps/expat-${{ env.EXPAT_VERSION }}
-          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
-          make -j$(nproc)
-          make install
-
-      - name: Build and install SQLite
-        shell: bash
-        run: |
-          cd ~/aria2-deps/sqlite-autoconf-${{ env.SQLITE_VERSION }}
-          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
-          make -j$(nproc)
-          make install
-
-      - name: Build and install zlib
-        shell: bash
-        run: |
-          cd ~/aria2-deps/zlib-${{ env.ZLIB_VERSION }}
-          make -f win32/Makefile.gcc PREFIX=${{ matrix.arch }}-w64-mingw32-
-          make -f win32/Makefile.gcc PREFIX=${{ matrix.arch }}-w64-mingw32- install
-
-      - name: Build and install c-ares
-        shell: bash
-        run: |
-          cd ~/aria2-deps/c-ares-${{ env.CARES_VERSION }}
-          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
-          make -j$(nproc)
-          make install
-
-      - name: Build and install libssh2
-        shell: bash
-        run: |
-          cd ~/aria2-deps/libssh2-${{ env.LIBSSH2_VERSION }}
-          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static --with-libssl-prefix=/usr/local/${{ matrix.arch }}-w64-mingw32
-          make -j$(nproc)
-          make install
-
-      - name: Download aria2 source code
-        shell: bash
-        run: |
-          git clone https://github.com/aria2/aria2.git
-          cd aria2
-
-      - name: Generate configure script
-        shell: bash
-        run: |
+          git clone --depth 1 https://github.com/aria2/aria2
           cd aria2
           autoreconf -i
-
-      - name: Configure aria2
-        shell: bash
-        run: |
-          cd aria2
-          ./configure --host=${{ matrix.arch }}-w64-mingw32 --enable-static --disable-shared
-
-      - name: Build aria2
-        shell: bash
-        run: |
-          cd aria2
+          ./configure \
+            --host=${{ matrix.host }} \
+            --enable-static \
+            --disable-shared
           make -j$(nproc)
+          ${{ matrix.host }}-strip src/aria2c.exe
 
-      - name: Test aria2
-        shell: bash
-        run: |
-          cd aria2/src
-          ./aria2c.exe --version
-
-      - name: Package artifacts
-        shell: bash
-        run: |
-          mkdir -p dist/${{ matrix.arch }}
-          cp aria2/src/aria2c.exe dist/${{ matrix.arch }}/
-          cd dist
-          zip -r
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: aria2c-${{ matrix.host }}-static
+          path: aria2/src/aria2c.exe
