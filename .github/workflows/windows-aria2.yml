@@ -88,24 +88,11 @@ jobs:
       - name: Download and install archive.dir.tar.xz
         shell: bash
         run: |
-          # 在 MSYS2 环境中使用 wget 下载 gettext 源码包
-          /c/msys64/usr/bin/bash -lc "wget https://ftpmirror.gnu.org/gettext/gettext-0.22.4.tar.xz -O gettext.tar.xz"
-
-          # 解压 gettext 源码包
-          /c/msys64/usr/bin/bash -lc "tar -xf gettext.tar.xz"
-
-          # 找到 archive.dir.tar.xz 文件
-          ARCHIVE_DIR=$(/c/msys64/usr/bin/bash -lc "find . -name 'archive.dir.tar.xz' | head -n 1")
-
-          # 检查是否找到文件
-          if [ -z "$ARCHIVE_DIR" ]; then
-            echo "Error: archive.dir.tar.xz not found!"
-            exit 1
-          fi
-
-          # 将 archive.dir.tar.xz 文件复制到 /usr/share/gettext/ 目录
+          # 创建目标目录
           /c/msys64/usr/bin/bash -lc "mkdir -p /usr/share/gettext"
-          /c/msys64/usr/bin/bash -lc "cp '$ARCHIVE_DIR' /usr/share/gettext/"
+
+          # 下载 gettext-0.21.tar.xz 并重命名为 archive.dir.tar.xz
+          /c/msys64/usr/bin/bash -lc "wget https://ftp.gnu.org/pub/gnu/gettext/gettext-0.23.1.tar.xz -O /usr/share/gettext/archive.dir.tar.xz"
 
       - name: Set up build environment
         shell: bash
@@ -117,3 +104,75 @@ jobs:
           else
             echo "MSYSTEM=MINGW32" >> $GITHUB_ENV
             echo "MINGW_PREFIX=/mingw32" >> $GITHUB_ENV
+          fi
+
+      - name: Build aria2
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
+          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
+
+          # 确保在 MSYS2 环境中运行 autoreconf
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && autoreconf -i"
+
+          # 配置并构建 aria2，启用推荐的选项
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && ./configure \
+            --host=${{ matrix.arch }}-w64-mingw32 \
+            --enable-static \
+            --disable-shared \
+            --with-libxml2 \
+            --with-libssh2 \
+            --with-sqlite3 \
+            --with-c-ares \
+            --with-zlib \
+            --with-gmp \
+            --with-nettle \
+            --with-expat"
+
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && make -j$(nproc)"
+
+      - name: Run unit tests (make check)
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
+          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
+
+          # 运行单元测试
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && make check"
+
+      - name: Check aria2c version
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
+          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
+
+          # 输出 aria2c 版本以验证构建成功
+          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && ./src/aria2c --version"
+
+      - name: Package artifacts
+        shell: bash
+        run: |
+          # 切换到官方仓库目录
+          cd aria2-official
+
+          # 创建分发目录
+          mkdir -p dist/${{ matrix.arch }}
+          cp src/aria2c.exe dist/${{ matrix.arch }}/
+
+          # 打包成 ZIP 文件
+          zip -r dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip dist/${{ matrix.arch }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria2-${{ matrix.arch }}-windows-static-recommended
+          path: aria2-official/dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip
