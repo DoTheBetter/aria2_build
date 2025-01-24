@@ -34,7 +34,7 @@ jobs:
             patch ca-certificates \
             pkg-config git curl dpkg-dev gcc-mingw-w64 g++-mingw-w64 \
             autopoint libcppunit-dev libxml2-dev libgcrypt20-dev lzip \
-            python3-docutils
+            python3-docutils libiconv-dev
 
       - name: Download and extract dependencies
         run: |
