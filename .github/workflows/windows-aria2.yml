@@ -98,8 +98,8 @@ jobs:
           ARCHIVE_DIR=$(/c/msys64/usr/bin/bash -lc "find gettext-* -name 'archive.dir.tar.xz'")
 
           # 将 archive.dir.tar.xz 文件复制到 /usr/share/gettext/ 目录
-          /c/msys64/usr/bin/bash -lc "sudo mkdir -p /usr/share/gettext"
-          /c/msys64/usr/bin/bash -lc "sudo cp '$ARCHIVE_DIR' /usr/share/gettext/"
+          /c/msys64/usr/bin/bash -lc "mkdir -p /usr/share/gettext"
+          /c/msys64/usr/bin/bash -lc "cp '$ARCHIVE_DIR' /usr/share/gettext/"
 
       - name: Set up build environment
         shell: bash
