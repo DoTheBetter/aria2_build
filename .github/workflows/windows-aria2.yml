@@ -80,20 +80,20 @@ jobs:
           fi
 
       - name: Download and install archive.dir.tar.xz
-        shell: bash
+        shell: pwsh
         run: |
-          # 手动下载 archive.dir.tar.xz 文件
-          wget https://ftp.gnu.org/pub/gnu/gettext/gettext-0.23.1.tar.xz -O gettext.tar.xz
+          # 手动下载 gettext 源码包
+          Invoke-WebRequest -Uri "https://ftp.gnu.org/pub/gnu/gettext/gettext-0.22.4.tar.xz" -OutFile "gettext.tar.xz"
 
           # 解压 gettext 源码包
           tar -xf gettext.tar.xz
 
           # 找到 archive.dir.tar.xz 文件
-          ARCHIVE_DIR=$(find gettext-* -name "archive.dir.tar.xz")
+          $ARCHIVE_DIR = (Get-ChildItem -Recurse -Filter "archive.dir.tar.xz").FullName
 
           # 将 archive.dir.tar.xz 文件复制到 /usr/share/gettext/ 目录
-          sudo mkdir -p /usr/share/gettext
-          sudo cp "$ARCHIVE_DIR" /usr/share/gettext/
+          New-Item -ItemType Directory -Path "/usr/share/gettext" -Force
+          Copy-Item -Path $ARCHIVE_DIR -Destination "/usr/share/gettext/"
 
       - name: Set up build environment
         shell: bash
