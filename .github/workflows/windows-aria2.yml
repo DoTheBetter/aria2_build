@@ -181,7 +181,8 @@ jobs:
         run: |
           cd aria2
           export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
-          export CPPFLAGS="-I/usr/include/cppunit"
+          export CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include -I/usr/include/cppunit"
+          export LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib"
           make check
 
       - name: Upload artifacts
