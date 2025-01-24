@@ -159,17 +159,14 @@ jobs:
           git clone --depth 1 https://github.com/aria2/aria2
           cd aria2
           autoreconf -i
-          ./mingw-config \
+          export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
+          ./configure \
             --host=${{ matrix.host }} \
             --prefix=/usr/local/${{ matrix.host }} \
             --enable-static \
             --disable-shared \
-            --with-gmp=/usr/local/${{ matrix.host }} \
-            --with-libz=/usr/local/${{ matrix.host }} \
-            --with-sqlite3=/usr/local/${{ matrix.host }} \
-            --with-libexpat=/usr/local/${{ matrix.host }} \
-            --with-libssh2=/usr/local/${{ matrix.host }} \
-            --with-c-ares=/usr/local/${{ matrix.host }}
+            CPPFLAGS="-I/usr/local/${{ matrix.host }}/include" \
+            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
       
