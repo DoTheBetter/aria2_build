@@ -160,6 +160,11 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/aria2/aria2
           cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
           autoreconf -i
           export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
           ./configure \
@@ -167,18 +172,15 @@ jobs:
             --prefix=/usr/local/${{ matrix.host }} \
             --enable-static \
             --disable-shared \
-            CPPFLAGS="-I/usr/local/${{ matrix.host }}/include" \
-            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib"
+            CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
+            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
-      
-      - name: Check if aria2 is built successfully
+
+      - name: Run make check
         run: |
-          ./aria2/src/aria2c.exe --version
-          if [ $? -ne 0 ]; then
-            echo "aria2 build failed"
-            exit 1
-          fi
+          cd aria2
+          make check
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
