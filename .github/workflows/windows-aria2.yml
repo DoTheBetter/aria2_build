@@ -29,9 +29,10 @@ jobs:
       - name: Set up MSYS2
         shell: bash
         run: |
-          # Download and install MSYS2
-          curl -O https://repo.msys2.org/distrib/x86_64/msys2-x86_64-latest.tar.xz
-          tar -xf msys2-x86_64-latest.tar.xz -C /c/
+          # 下载并安装 MSYS2
+          curl -L -O https://repo.msys2.org/distrib/x86_64/msys2-x86_64-latest.tar.xz
+          xz -d msys2-x86_64-latest.tar.xz
+          tar -xf msys2-x86_64-latest.tar -C /c/
           echo "C:/msys64/usr/bin" >> $GITHUB_PATH
 
       - name: Update MSYS2 and install basic tools
