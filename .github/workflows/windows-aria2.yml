@@ -34,7 +34,7 @@ jobs:
             patch ca-certificates \
             pkg-config git curl dpkg-dev gcc-mingw-w64 g++-mingw-w64 \
             autopoint libcppunit-dev libxml2-dev libgcrypt20-dev lzip \
-            python3-docutils
+            python3-docutils libiconv-dev
 
       - name: Download and extract dependencies
         run: |
@@ -163,8 +163,8 @@ jobs:
             --host=${{ matrix.host }} \
             --enable-static \
             --disable-shared \
-            CPPFLAGS="-I/usr/local/${{ matrix.host }}/include" \
-            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib"
+            CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/include/libxml2" \
+            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -liconv"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
 
