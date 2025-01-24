@@ -58,12 +58,20 @@ jobs:
           EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
 
           # 下载依赖源码
-          curl -L -O https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.gz
-          curl -L -O https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
-          curl -L -O https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
-          curl -L -O https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
-          curl -L -O https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
-          curl -L -O https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+          curl -L -o gmp-${{ env.GMP_VERSION }}.tar.gz https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.gz
+          curl -L -o expat-${{ env.EXPAT_VERSION }}.tar.gz https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
+          curl -L -o sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          curl -L -o zlib-${{ env.ZLIB_VERSION }}.tar.gz https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
+          curl -L -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+
+          # 验证下载的文件是否有效
+          for file in *.tar.gz; do
+            if ! tar -tzf "$file" >/dev/null 2>&1; then
+              echo "Error: $file is not a valid gzip archive."
+              exit 1
+            fi
+          done
 
           # 解压源码
           tar -xzf gmp-${{ env.GMP_VERSION }}.tar.gz
@@ -156,10 +164,4 @@ jobs:
           mkdir -p dist/${{ matrix.arch }}
           cp aria2/src/aria2c.exe dist/${{ matrix.arch }}/
           cd dist
-          zip -r aria2-windows-${{ matrix.arch }}.zip ${{ matrix.arch }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: aria2-windows-${{ matrix.arch }}
-          path: dist/aria2-windows-${{ matrix.arch }}.zip
+          zip -r
