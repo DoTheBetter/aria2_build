@@ -26,15 +26,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Clean up existing MSYS2 installation
+      - name: Check if MSYS2 is installed
+        id: check-msys2
         shell: bash
         run: |
-          # 删除现有的 MSYS2 目录
-          if [ -d "C:/msys64" ]; then
-            rm -rf C:/msys64
+          if pacman --version; then
+            echo "MSYS2 is already installed."
+            echo "msys2_installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "MSYS2 is not installed. Will proceed with installation."
+            echo "msys2_installed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download and install MSYS2
+      - name: Install MSYS2 (if not installed)
+        if: steps.check-msys2.outputs.msys2_installed == 'false'
         shell: bash
         run: |
           # 下载 MSYS2 安装程序
