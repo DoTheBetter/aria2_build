@@ -79,21 +79,27 @@ jobs:
               mingw-w64-i686-gettext"
           fi
 
+      - name: Install wget
+        shell: bash
+        run: |
+          # 安装 wget
+          /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S wget"
+
       - name: Download and install archive.dir.tar.xz
-        shell: pwsh
+        shell: bash
         run: |
           # 手动下载 gettext 源码包
-          Invoke-WebRequest -Uri "https://ftp.gnu.org/pub/gnu/gettext/gettext-0.22.4.tar.xz" -OutFile "gettext.tar.xz"
+          wget https://ftpmirror.gnu.org/gettext/gettext-0.22.4.tar.xz -O gettext.tar.xz
 
           # 解压 gettext 源码包
           tar -xf gettext.tar.xz
 
           # 找到 archive.dir.tar.xz 文件
-          $ARCHIVE_DIR = (Get-ChildItem -Recurse -Filter "archive.dir.tar.xz").FullName
+          ARCHIVE_DIR=$(find gettext-* -name "archive.dir.tar.xz")
 
           # 将 archive.dir.tar.xz 文件复制到 /usr/share/gettext/ 目录
-          New-Item -ItemType Directory -Path "/usr/share/gettext" -Force
-          Copy-Item -Path $ARCHIVE_DIR -Destination "/usr/share/gettext/"
+          sudo mkdir -p /usr/share/gettext
+          sudo cp "$ARCHIVE_DIR" /usr/share/gettext/
 
       - name: Set up build environment
         shell: bash
