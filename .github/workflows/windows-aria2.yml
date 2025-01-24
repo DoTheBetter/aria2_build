@@ -15,7 +15,7 @@ env:
   ZLIB_VERSION: "1.3.1"
   CARES_VERSION: "1.34.4"
   LIBSSH2_VERSION: "1.11.1"
-  CPPUNIT_VERSION: "1.15.1"  # 新增 CppUnit 版本
+  CPPUNIT_VERSION: "1.15.1"
 
 jobs:
   build:
@@ -51,7 +51,7 @@ jobs:
           curl -L -o zlib-${{ env.ZLIB_VERSION }}.tar.gz https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
           curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz     
           curl -L -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
-          curl -L -o cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz http://dev-www.libreoffice.org/src/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz  # 使用提供的下载地址
+          curl -L -o cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz http://dev-www.libreoffice.org/src/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
 
           # 验证下载的文件是否有效
           for file in *.tar.gz; do
@@ -68,7 +68,7 @@ jobs:
           tar -xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
           tar -xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
           tar -xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
-          tar -xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz  # 解压 CppUnit 源码
+          tar -xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
 
       - name: Build and install GMP
         run: |
@@ -199,7 +199,7 @@ jobs:
           export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include"
           export LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib"
-          make check
+          make check || (cat test/test-suite.log && exit 1)
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
