@@ -26,23 +26,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up MSYS2
+      - name: Download and install MSYS2
         shell: bash
         run: |
-          # 下载并安装 MSYS2
-          curl -L -O https://repo.msys2.org/distrib/x86_64/msys2-x86_64-latest.tar.xz
-          xz -d msys2-x86_64-latest.tar.xz
-          tar -xf msys2-x86_64-latest.tar -C /c/
+          # 下载 MSYS2 安装程序
+          curl -L -O https://github.com/msys2/msys2-installer/releases/download/2024-12-08/msys2-x86_64-20241208.exe
+
+          # 安装 MSYS2
+          ./msys2-x86_64-20241208.exe install --root C:/msys64 --confirm-command
+
+          # 将 MSYS2 的 bin 目录添加到 PATH
           echo "C:/msys64/usr/bin" >> $GITHUB_PATH
 
       - name: Update MSYS2 and install basic tools
         shell: bash
         run: |
-          # Update MSYS2
+          # 更新 MSYS2
           pacman -Syu --noconfirm
           pacman -Su --noconfirm
 
-          # Install basic tools
+          # 安装基本工具
           pacman -S --noconfirm --needed base-devel mingw-w64-${{ matrix.arch }}-toolchain autoconf automake libtool pkg-config
 
       - name: Download dependency sources
