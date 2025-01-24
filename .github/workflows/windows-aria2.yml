@@ -39,7 +39,8 @@ jobs:
             python3-docutils \
             mingw-w64-tools mingw-w64-common \
             mingw-w64-i686-dev mingw-w64-x86-64-dev \
-            wine wine32  # 安装 wine 和 wine32
+            wine wine32 \  # 安装 wine 和 wine32
+            mingw-w64  # 安装 MinGW 运行时库
 
       - name: Download and extract dependencies
         run: |
@@ -191,17 +192,25 @@ jobs:
             --enable-static \
             --disable-shared \
             CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
-            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib"
+            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static"  # 静态链接
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
 
       - name: Run aria2c with Wine and output version
         run: |
+          # 将 MinGW 运行时库复制到 Wine 的系统目录
+          cp /usr/lib/gcc/${{ matrix.host }}/*-posix/libgcc_s_dw2-1.dll /tmp/wine/drive_c/windows/system32/
+          cp /usr/lib/gcc/${{ matrix.host }}/*-posix/libstdc++-6.dll /tmp/wine/drive_c/windows/system32/
+
           cd aria2/src
           wine ./aria2c.exe --version  # 使用 Wine 运行 aria2c.exe 并输出版本信息
 
       - name: Run make check with Wine
         run: |
+          # 将 MinGW 运行时库复制到 Wine 的系统目录
+          cp /usr/lib/gcc/${{ matrix.host }}/*-posix/libgcc_s_dw2-1.dll /tmp/wine/drive_c/windows/system32/
+          cp /usr/lib/gcc/${{ matrix.host }}/*-posix/libstdc++-6.dll /tmp/wine/drive_c/windows/system32/
+
           cd aria2
           export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include"
