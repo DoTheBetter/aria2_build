@@ -29,6 +29,7 @@ jobs:
 
       - name: Set up environment for ${{ matrix.host }}
         run: |
+          sudo dpkg --add-architecture i386  # 启用多架构支持
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             make binutils autoconf automake autotools-dev libtool \
@@ -38,7 +39,7 @@ jobs:
             python3-docutils \
             mingw-w64-tools mingw-w64-common \
             mingw-w64-i686-dev mingw-w64-x86-64-dev \
-            wine  # 安装 Wine
+            wine wine32  # 安装 wine 和 wine32
 
       - name: Download and extract dependencies
         run: |
