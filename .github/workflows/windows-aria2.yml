@@ -26,6 +26,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Add MSYS2 to PATH
+        shell: bash
+        run: |
+          # 将 MSYS2 的 usr/bin 目录添加到 PATH
+          echo "C:/msys64/usr/bin" >> $GITHUB_PATH
+
+      - name: Verify MSYS2 installation
+        shell: bash
+        run: |
+          # 检查 pacman 是否可用
+          pacman --version
+
       - name: Update MSYS2 and install basic tools
         shell: bash
         run: |
