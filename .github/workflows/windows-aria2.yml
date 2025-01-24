@@ -8,171 +8,154 @@ on:
       - '.github/workflows/windows-aria2.yml'
   workflow_dispatch:
 
+env:
+  GMP_VERSION: 6.3.0
+  EXPAT_VERSION: 2.6.4
+  SQLITE_VERSION: 3480000
+  ZLIB_VERSION: 1.3.1
+  CARES_VERSION: 1.34.4
+  LIBSSH2_VERSION: 1.11.1
+
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: [x86_64, i686]  # 64-bit and 32-bit
+        arch: [x86_64, i686]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          repository: aria2/aria2  # 拉取官方仓库
-          path: aria2-official     # 将官方仓库检出到 aria2-official 目录
-
-      - name: Apply patches
-        shell: bash
-        run: |
-          # 切换到官方仓库目录
-          cd aria2-official
-
-          # 应用补丁文件（假设补丁文件位于仓库根目录的 patches/ 目录下）
-          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
-            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
-              patch -p1 < "$patch_file" || exit 1
-            done
-          fi
 
       - name: Set up MSYS2
-        shell: pwsh
-        run: |
-          # 下载并安装 MSYS2
-          Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-base-x86_64-latest.sfx.exe" -OutFile "msys2.exe"
-          .\msys2.exe -y -oC:\
-          C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
-          C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Su"
-
-      - name: Install dependencies
         shell: bash
         run: |
-          # 安装 MinGW 工具链和依赖项
-          if [ "${{ matrix.arch }}" = "x86_64" ]; then
-            /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain \
-              mingw-w64-x86_64-zlib \
-              mingw-w64-x86_64-libssh2 \
-              mingw-w64-x86_64-sqlite3 \
-              mingw-w64-x86_64-c-ares \
-              mingw-w64-x86_64-libxml2 \
-              mingw-w64-x86_64-expat \
-              mingw-w64-x86_64-nettle \
-              mingw-w64-x86_64-gmp \
-              autoconf \
-              automake \
-              libtool \
-              make \
-              mingw-w64-x86_64-gettext"
-          else
-            /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S mingw-w64-i686-toolchain \
-              mingw-w64-i686-zlib \
-              mingw-w64-i686-libssh2 \
-              mingw-w64-i686-sqlite3 \
-              mingw-w64-i686-c-ares \
-              mingw-w64-i686-libxml2 \
-              mingw-w64-i686-expat \
-              mingw-w64-i686-nettle \
-              mingw-w64-i686-gmp \
-              autoconf \
-              automake \
-              libtool \
-              make \
-              mingw-w64-i686-gettext"
-          fi
+          # Download and install MSYS2
+          curl -O https://repo.msys2.org/distrib/x86_64/msys2-x86_64-latest.tar.xz
+          tar -xf msys2-x86_64-latest.tar.xz -C /c/
+          echo "C:/msys64/usr/bin" >> $GITHUB_PATH
 
-      - name: Install wget
+      - name: Update MSYS2 and install basic tools
         shell: bash
         run: |
-          # 安装 wget
-          /c/msys64/usr/bin/bash -lc "pacman --noconfirm -S wget"
+          # Update MSYS2
+          pacman -Syu --noconfirm
+          pacman -Su --noconfirm
 
-      - name: Download and install archive.dir.tar.xz
+          # Install basic tools
+          pacman -S --noconfirm --needed base-devel mingw-w64-${{ matrix.arch }}-toolchain autoconf automake libtool pkg-config
+
+      - name: Download dependency sources
         shell: bash
         run: |
-          # 创建目标目录
-          /c/msys64/usr/bin/bash -lc "mkdir -p /usr/share/gettext"
+          mkdir -p ~/aria2-deps
+          cd ~/aria2-deps
+          
+          EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
+          EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
 
-          # 下载 gettext-0.21.tar.xz 并重命名为 archive.dir.tar.xz
-          /c/msys64/usr/bin/bash -lc "wget https://ftp.gnu.org/pub/gnu/gettext/gettext-0.23.1.tar.xz -O /usr/share/gettext/archive.dir.tar.xz"
+          # Download sources using environment variables
+          curl -O https://gmplib.org/download/gmp/gmp-${{ env.GMP_VERSION }}.tar.xz
+          curl -O https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
+          curl -O https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          curl -O https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          curl -O https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
+          curl -O https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
 
-      - name: Set up build environment
+          # Extract sources
+          tar -xf gmp-${{ env.GMP_VERSION }}.tar.xz
+          tar -xf expat-${{ env.EXPAT_VERSION }}.tar.gz
+          tar -xf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          tar -xf zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          tar -xf c-ares-${{ env.CARES_VERSION }}.tar.gz
+          tar -xf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+
+      - name: Build and install GMP
         shell: bash
         run: |
-          # 设置环境变量
-          if [ "${{ matrix.arch }}" = "x86_64" ]; then
-            echo "MSYSTEM=MINGW64" >> $GITHUB_ENV
-            echo "MINGW_PREFIX=/mingw64" >> $GITHUB_ENV
-          else
-            echo "MSYSTEM=MINGW32" >> $GITHUB_ENV
-            echo "MINGW_PREFIX=/mingw32" >> $GITHUB_ENV
-          fi
+          cd ~/aria2-deps/gmp-${{ env.GMP_VERSION }}
+          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+
+      - name: Build and install Expat
+        shell: bash
+        run: |
+          cd ~/aria2-deps/expat-${{ env.EXPAT_VERSION }}
+          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+
+      - name: Build and install SQLite
+        shell: bash
+        run: |
+          cd ~/aria2-deps/sqlite-autoconf-${{ env.SQLITE_VERSION }}
+          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+
+      - name: Build and install zlib
+        shell: bash
+        run: |
+          cd ~/aria2-deps/zlib-${{ env.ZLIB_VERSION }}
+          make -f win32/Makefile.gcc PREFIX=${{ matrix.arch }}-w64-mingw32-
+          make -f win32/Makefile.gcc PREFIX=${{ matrix.arch }}-w64-mingw32- install
+
+      - name: Build and install c-ares
+        shell: bash
+        run: |
+          cd ~/aria2-deps/c-ares-${{ env.CARES_VERSION }}
+          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+
+      - name: Build and install libssh2
+        shell: bash
+        run: |
+          cd ~/aria2-deps/libssh2-${{ env.LIBSSH2_VERSION }}
+          ./configure --host=${{ matrix.arch }}-w64-mingw32 --prefix=/usr/local/${{ matrix.arch }}-w64-mingw32 --disable-shared --enable-static --with-libssl-prefix=/usr/local/${{ matrix.arch }}-w64-mingw32
+          make -j$(nproc)
+          make install
+
+      - name: Download aria2 source code
+        shell: bash
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
+
+      - name: Generate configure script
+        shell: bash
+        run: |
+          cd aria2
+          autoreconf -i
+
+      - name: Configure aria2
+        shell: bash
+        run: |
+          cd aria2
+          ./configure --host=${{ matrix.arch }}-w64-mingw32 --enable-static --disable-shared
 
       - name: Build aria2
         shell: bash
         run: |
-          # 切换到官方仓库目录
-          cd aria2-official
+          cd aria2
+          make -j$(nproc)
 
-          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
-          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
-
-          # 确保在 MSYS2 环境中运行 autoreconf
-          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && autoreconf -i"
-
-          # 配置并构建 aria2，启用推荐的选项
-          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && ./configure \
-            --host=${{ matrix.arch }}-w64-mingw32 \
-            --enable-static \
-            --disable-shared \
-            --with-libxml2 \
-            --with-libssh2 \
-            --with-sqlite3 \
-            --with-c-ares \
-            --with-zlib \
-            --with-gmp \
-            --with-nettle \
-            --with-expat"
-
-          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && make -j$(nproc)"
-
-      - name: Run unit tests (make check)
+      - name: Test aria2
         shell: bash
         run: |
-          # 切换到官方仓库目录
-          cd aria2-official
-
-          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
-          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
-
-          # 运行单元测试
-          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && make check"
-
-      - name: Check aria2c version
-        shell: bash
-        run: |
-          # 切换到官方仓库目录
-          cd aria2-official
-
-          # 将 Windows 路径转换为 MSYS2 的 Unix 风格路径
-          MSYS2_PATH=$(echo "$(pwd -W)" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\L\1/')
-
-          # 输出 aria2c 版本以验证构建成功
-          /c/msys64/usr/bin/bash -lc "cd $MSYS2_PATH && ./src/aria2c --version"
+          cd aria2/src
+          ./aria2c.exe --version
 
       - name: Package artifacts
         shell: bash
         run: |
-          # 切换到官方仓库目录
-          cd aria2-official
-
-          # 创建分发目录
           mkdir -p dist/${{ matrix.arch }}
-          cp src/aria2c.exe dist/${{ matrix.arch }}/
-
-          # 打包成 ZIP 文件
-          zip -r dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip dist/${{ matrix.arch }}
+          cp aria2/src/aria2c.exe dist/${{ matrix.arch }}/
+          cd dist
+          zip -r aria2-windows-${{ matrix.arch }}.zip ${{ matrix.arch }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: aria2-${{ matrix.arch }}-windows-static-recommended
-          path: aria2-official/dist/aria2-${{ matrix.arch }}-windows-static-recommended.zip
+          name: aria2-windows-${{ matrix.arch }}
+          path: dist/aria2-windows-${{ matrix.arch }}.zip
