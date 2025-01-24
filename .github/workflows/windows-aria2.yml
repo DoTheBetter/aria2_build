@@ -26,31 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Check if MSYS2 is installed
-        id: check-msys2
-        shell: bash
-        run: |
-          if pacman --version; then
-            echo "MSYS2 is already installed."
-            echo "msys2_installed=true" >> $GITHUB_OUTPUT
-          else
-            echo "MSYS2 is not installed. Will proceed with installation."
-            echo "msys2_installed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Install MSYS2 (if not installed)
-        if: steps.check-msys2.outputs.msys2_installed == 'false'
-        shell: bash
-        run: |
-          # 下载 MSYS2 安装程序
-          curl -L -O https://github.com/msys2/msys2-installer/releases/download/2024-12-08/msys2-x86_64-20241208.exe
-
-          # 安装 MSYS2
-          ./msys2-x86_64-20241208.exe install --root C:/msys64 --confirm-command
-
-          # 将 MSYS2 的 bin 目录添加到 PATH
-          echo "C:/msys64/usr/bin" >> $GITHUB_PATH
-
       - name: Update MSYS2 and install basic tools
         shell: bash
         run: |
@@ -70,7 +45,7 @@ jobs:
           EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
           EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
 
-          # Download sources using environment variables
+          # 下载依赖源码
           curl -O https://gmplib.org/download/gmp/gmp-${{ env.GMP_VERSION }}.tar.xz
           curl -O https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
           curl -O https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
@@ -78,7 +53,7 @@ jobs:
           curl -O https://c-ares.haxx.se/download/c-ares-${{ env.CARES_VERSION }}.tar.gz
           curl -O https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
 
-          # Extract sources
+          # 解压源码
           tar -xf gmp-${{ env.GMP_VERSION }}.tar.xz
           tar -xf expat-${{ env.EXPAT_VERSION }}.tar.gz
           tar -xf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
