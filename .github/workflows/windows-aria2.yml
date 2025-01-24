@@ -159,10 +159,20 @@ jobs:
           git clone --depth 1 https://github.com/aria2/aria2
           cd aria2
           autoreconf -i
-          ./mingw-config
+          ./mingw-config \
+            --host=${{ matrix.host }} \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --enable-static \
+            --disable-shared \
+            --with-gmp=/usr/local/${{ matrix.host }} \
+            --with-libz=/usr/local/${{ matrix.host }} \
+            --with-sqlite3=/usr/local/${{ matrix.host }} \
+            --with-libexpat=/usr/local/${{ matrix.host }} \
+            --with-libssh2=/usr/local/${{ matrix.host }} \
+            --with-c-ares=/usr/local/${{ matrix.host }}
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
-
+      
       - name: Check if aria2 is built successfully
         run: |
           ./aria2/src/aria2c.exe --version
