@@ -66,12 +66,12 @@ jobs:
           curl -L -O https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
 
           # 解压源码
-          tar -xf gmp-${{ env.GMP_VERSION }}.tar.gz
-          tar -xf expat-${{ env.EXPAT_VERSION }}.tar.gz
-          tar -xf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
-          tar -xf zlib-${{ env.ZLIB_VERSION }}.tar.gz
-          tar -xf c-ares-${{ env.CARES_VERSION }}.tar.gz
-          tar -xf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+          tar -xzf gmp-${{ env.GMP_VERSION }}.tar.gz
+          tar -xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
+          tar -xzf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          tar -xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          tar -xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
+          tar -xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
 
       - name: Build and install GMP
         shell: bash
