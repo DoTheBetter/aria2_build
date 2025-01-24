@@ -37,7 +37,8 @@ jobs:
             autopoint libxml2-dev libgcrypt20-dev lzip \
             python3-docutils \
             mingw-w64-tools mingw-w64-common \
-            mingw-w64-i686-dev mingw-w64-x86-64-dev
+            mingw-w64-i686-dev mingw-w64-x86-64-dev \
+            wine  # 安装 Wine
 
       - name: Download and extract dependencies
         run: |
@@ -193,12 +194,19 @@ jobs:
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
 
-      - name: Run make check
+      - name: Run aria2c with Wine and output version
+        run: |
+          cd aria2/src
+          wine ./aria2c.exe --version  # 使用 Wine 运行 aria2c.exe 并输出版本信息
+
+      - name: Run make check with Wine
         run: |
           cd aria2
           export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include"
           export LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib"
+          export WINEPREFIX=/tmp/wine  # 设置 Wine 前缀
+          winecfg &>/dev/null  # 初始化 Wine 配置
           make check || (cat test/test-suite.log && exit 1)
 
       - name: Upload artifacts
