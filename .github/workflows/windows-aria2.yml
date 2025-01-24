@@ -180,6 +180,7 @@ jobs:
       - name: Run make check
         run: |
           cd aria2
+          export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
           make check
 
       - name: Upload artifacts
