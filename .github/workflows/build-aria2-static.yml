@@ -34,9 +34,13 @@ jobs:
     - name: Download ARIA2 source code
       shell: bash
       run: |
-        git clone https://github.com/aria2/aria2.git aria2-source
+        git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
-        git checkout latest-release
+        if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+          for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+            patch -p1 < "$patch_file" || exit 1
+          done
+        fi
 
     - name: Configure and build 64-bit ARIA2
       shell: msys2 {0}
@@ -88,9 +92,13 @@ jobs:
     - name: Download ARIA2 source code
       shell: bash
       run: |
-        git clone https://github.com/aria2/aria2.git aria2-source
+        git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
-        git checkout latest-release
+        if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+          for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+            patch -p1 < "$patch_file" || exit 1
+          done
+        fi
 
     - name: Configure and build 32-bit ARIA2
       shell: msys2 {0}
