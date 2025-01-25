@@ -177,7 +177,7 @@ jobs:
             LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc -static-libstdc++"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
-          upx --best src/aria2c.exe
+          
 
       - name: Get aria2 version
         id: get-aria2-version
@@ -190,11 +190,12 @@ jobs:
       - name: Generate SHA256 checksum
         run: |
           cd aria2/src
+          upx --best aria2c.exe
           sha256sum aria2c.exe > aria2c.exe.sha256
           cat aria2c.exe.sha256
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}-static
           path: |
