@@ -15,7 +15,6 @@ env:
   ZLIB_VERSION: "1.3.1"
   CARES_VERSION: "1.34.4"
   LIBSSH2_VERSION: "1.11.1"
-  CPPUNIT_VERSION: "1.15.1"
 
 jobs:
   build:
@@ -37,7 +36,8 @@ jobs:
             autopoint libxml2-dev libgcrypt20-dev lzip \
             python3-docutils \
             mingw-w64-tools mingw-w64-common \
-            mingw-w64-i686-dev mingw-w64-x86-64-dev
+            mingw-w64-i686-dev mingw-w64-x86-64-dev \
+            upx
 
       - name: Download and extract dependencies
         run: |
@@ -51,7 +51,6 @@ jobs:
           curl -L -o zlib-${{ env.ZLIB_VERSION }}.tar.gz https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
           curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz     
           curl -L -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
-          curl -L -o cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz http://dev-www.libreoffice.org/src/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
 
           # 验证下载的文件是否有效
           for file in *.tar.gz; do
@@ -68,7 +67,6 @@ jobs:
           tar -xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
           tar -xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
           tar -xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
-          tar -xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
 
       - name: Build and install GMP
         run: |
@@ -159,19 +157,6 @@ jobs:
           sudo make install
           cd ..
 
-      - name: Build and install CppUnit
-        run: |
-          cd cppunit-${{ env.CPPUNIT_VERSION }}
-          ./configure \
-            --disable-shared \
-            --enable-static \
-            --prefix=/usr/local/${{ matrix.host }} \
-            --host=${{ matrix.host }} \
-            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-          make -j$(nproc)
-          sudo make install
-          cd ..
-
       - name: Clone and build aria2
         run: |
           git clone --depth 1 https://github.com/aria2/aria2
@@ -189,12 +174,31 @@ jobs:
             --enable-static \
             --disable-shared \
             CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
+            CFLAGS="-Os -flto" \
+            CXXFLAGS="-Os -flto" \
             LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc -static-libstdc++"
           make -j$(nproc)
-          ${{ matrix.host }}-strip src/aria2c.exe
+          ${{ matrix.host }}-strip --strip-all src/aria2c.exe
+          upx --best src/aria2c.exe
+
+      - name: Get aria2 version
+        id: get-aria2-version
+        run: |
+          cd aria2
+          ARIA2_VERSION=$(grep 'PACKAGE_VERSION=' configure | cut -d"'" -f2)
+          echo "ARIA2_VERSION=${ARIA2_VERSION}" >> $GITHUB_ENV
+          echo "aria2 version: ${ARIA2_VERSION}"
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd aria2/src
+          sha256sum aria2c.exe > aria2c.exe.sha256
+          cat aria2c.exe.sha256
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: aria2c-${{ matrix.host }}-static
-          path: aria2/src/aria2c.exe
+          name: aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}-static
+          path: |
+            aria2/src/aria2c.exe
+            aria2/src/aria2c.exe.sha256
