@@ -58,9 +58,9 @@ jobs:
       shell: msys2 {0}
       run: |
         cd $GITHUB_WORKSPACE/aria2-source
-        autoreconf -i
+        autoreconf -i -f  # 强制重新生成 configure 脚本
         cd deps/wslay
-        autoreconf -i  # 手动生成 wslay 的 configure 脚本
+        autoreconf -i -f  # 强制重新生成 wslay 的 configure 脚本
         cd ../..
 
     - name: Configure and build 64-bit ARIA2
@@ -137,9 +137,9 @@ jobs:
       shell: msys2 {0}
       run: |
         cd $GITHUB_WORKSPACE/aria2-source
-        autoreconf -i
+        autoreconf -i -f  # 强制重新生成 configure 脚本
         cd deps/wslay
-        autoreconf -i  # 手动生成 wslay 的 configure 脚本
+        autoreconf -i -f  # 强制重新生成 wslay 的 configure 脚本
         cd ../..
 
     - name: Configure and build 32-bit ARIA2
