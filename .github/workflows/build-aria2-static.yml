@@ -30,8 +30,9 @@ jobs:
           mingw-w64-x86_64-libssh2
           mingw-w64-x86_64-cppunit
           autoconf
-          gettext-devel
           automake
+          libtool
+          gettext-devel
 
     - name: Download ARIA2 source code
       shell: bash
@@ -101,8 +102,9 @@ jobs:
           mingw-w64-i686-libssh2
           mingw-w64-i686-cppunit
           autoconf
-          gettext-devel
           automake
+          libtool
+          gettext-devel
 
     - name: Download ARIA2 source code
       shell: bash
