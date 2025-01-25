@@ -63,5 +63,5 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aria2-macos-64bit
+          name: aria2-${{ env.ARIA2_VERSION }}-macos-64bit
           path: release/aria2-${{ env.ARIA2_VERSION }}-macos-64bit
