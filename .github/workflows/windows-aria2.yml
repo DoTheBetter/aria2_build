@@ -201,13 +201,13 @@ jobs:
           export WINEPREFIX=/tmp/wine
           mkdir -p $WINEPREFIX
 
+          # 初始化 Wine 配置和目录结构
+          export WINEDLLOVERRIDES="mscoree,mshtml="
+          wineboot -u  # 初始化 Wine 并更新 Wine 前缀目录结构
+
           # 将 MinGW 运行时库复制到 Wine 的系统目录
           cp /usr/lib/gcc/${{ matrix.host }}/*-posix/libgcc_s_dw2-1.dll $WINEPREFIX/drive_c/windows/system32/
           cp /usr/lib/gcc/${{ matrix.host }}/*-posix/libstdc++-6.dll $WINEPREFIX/drive_c/windows/system32/
-
-          # 初始化 Wine 配置
-          export WINEDLLOVERRIDES="mscoree,mshtml="
-          winecfg
 
           # 运行测试
           cd aria2
