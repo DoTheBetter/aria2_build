@@ -1,0 +1,118 @@
+name: Build Static ARIA2 (64-bit and 32-bit) on Windows
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/build-aria2-static.yml'
+  workflow_dispatch:
+
+jobs:
+  build-64bit:
+    runs-on: windows-latest
+    name: Build 64-bit ARIA2
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up MSYS2 (64-bit)
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-c-ares
+          mingw-w64-x86_64-expat
+          mingw-w64-x86_64-sqlite3
+          mingw-w64-x86_64-zlib
+          mingw-w64-x86_64-libssh2
+          mingw-w64-x86_64-cppunit
+
+    - name: Download ARIA2 source code
+      shell: bash
+      run: |
+        git clone https://github.com/aria2/aria2.git aria2-source
+        cd aria2-source
+        git checkout latest-release
+
+    - name: Configure and build 64-bit ARIA2
+      shell: msys2 {0}
+      run: |
+        export HOST=x86_64-w64-mingw32
+        export PREFIX=/mingw64
+        export CPPFLAGS="-I$PREFIX/include"
+        export LDFLAGS="-L$PREFIX/lib"
+        export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
+        export ARIA2_STATIC=yes
+
+        cd $GITHUB_WORKSPACE/aria2-source
+        ./mingw-config
+        make -j$(nproc)
+
+    - name: Check 64-bit ARIA2 version
+      shell: cmd
+      run: |
+        .\aria2-source\src\aria2c.exe --version
+
+    - name: Upload 64-bit Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: aria2-static-64bit
+        path: ${{ github.workspace }}/aria2-source/src/aria2c.exe
+
+  build-32bit:
+    runs-on: windows-latest
+    name: Build 32-bit ARIA2
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up MSYS2 (32-bit)
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          mingw-w64-i686-toolchain
+          mingw-w64-i686-cmake
+          mingw-w64-i686-ninja
+          mingw-w64-i686-c-ares
+          mingw-w64-i686-expat
+          mingw-w64-i686-sqlite3
+          mingw-w64-i686-zlib
+          mingw-w64-i686-libssh2
+          mingw-w64-i686-cppunit
+
+    - name: Download ARIA2 source code
+      shell: bash
+      run: |
+        git clone https://github.com/aria2/aria2.git aria2-source
+        cd aria2-source
+        git checkout latest-release
+
+    - name: Configure and build 32-bit ARIA2
+      shell: msys2 {0}
+      run: |
+        export HOST=i686-w64-mingw32
+        export PREFIX=/mingw32
+        export CPPFLAGS="-I$PREFIX/include"
+        export LDFLAGS="-L$PREFIX/lib"
+        export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
+        export ARIA2_STATIC=yes
+
+        cd $GITHUB_WORKSPACE/aria2-source
+        ./mingw-config
+        make -j$(nproc)
+
+    - name: Check 32-bit ARIA2 version
+      shell: cmd
+      run: |
+        .\aria2-source\src\aria2c.exe --version
+
+    - name: Upload 32-bit Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: aria2-static-32bit
+        path: ${{ github.workspace }}/aria2-source/src/aria2c.exe
