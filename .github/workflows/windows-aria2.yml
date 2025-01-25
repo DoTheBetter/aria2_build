@@ -29,7 +29,6 @@ jobs:
 
       - name: Set up environment for ${{ matrix.host }}
         run: |
-          sudo dpkg --add-architecture i386  # 启用多架构支持
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             make binutils autoconf automake autotools-dev libtool \
@@ -190,7 +189,7 @@ jobs:
             --enable-static \
             --disable-shared \
             CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
-            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib"
+            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
 
