@@ -34,6 +34,7 @@ jobs:
           automake
           libtool
           make
+          pkg-config
 
     - name: Download ARIA2 source code
       shell: bash
@@ -104,6 +105,7 @@ jobs:
           automake
           libtool
           make
+          pkg-config
 
     - name: Download ARIA2 source code
       shell: bash
