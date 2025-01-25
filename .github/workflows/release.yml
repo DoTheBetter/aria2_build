@@ -35,9 +35,10 @@ jobs:
               --jq '.artifacts[] | select(.name | startswith("aria2-${{ env.ARIA2_VERSION }}-")) | .name' \
               --paginate | while read -r ARTIFACT_NAME; do
               echo "Downloading $ARTIFACT_NAME..."
-              gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_NAME/zip \
-                --header "Accept: application/vnd.github+json" \
-                --output "release/$ARTIFACT_NAME.zip"
+              curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -o "release/$ARTIFACT_NAME.zip" \
+                "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_NAME/zip"
             done
           done
         env:
