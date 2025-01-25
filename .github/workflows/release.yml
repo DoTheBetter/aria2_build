@@ -1,38 +1,48 @@
 name: Release
 
+
 on:
   workflow_dispatch:
 
 env:
   ARIA2_VERSION: "1.37.0"
-  
+
 jobs:
-  release:
+  download:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download All Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          pattern: aria2-${{ env.ARIA2_VERSION }}-*
-          merge-multiple: true
+      - name: Create release directory
+        run: mkdir -p release
 
-      - name: Check if release directory exists
-        id: check_release
+      - name: Get all workflow run IDs
+        id: get_run_ids
         run: |
-          if [ -d "release" ]; then
-            echo "::set-output name=exists::true"
-          else
-            echo "::set-output name=exists::false"
-          fi
+          RUN_IDS=$(gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[] | .id' \
+            --paginate)
+          echo "::set-output name=run_ids::$(echo $RUN_IDS | tr '\n' ' ')"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge files
-        if: steps.check_release.outputs.exists == 'true'
+      - name: Download artifacts with specific prefix
         run: |
-          cd release
-          ls
+          for RUN_ID in ${{ steps.get_run_ids.outputs.run_ids }}; do
+            echo "Checking artifacts from run $RUN_ID..."
+            gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts \
+              --jq '.artifacts[] | select(.name | startswith("aria2-${{ env.ARIA2_VERSION }}-")) | .name' \
+              --paginate | while read -r ARTIFACT_NAME; do
+              echo "Downloading $ARTIFACT_NAME..."
+              gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_NAME/zip \
+                --header "Accept: application/vnd.github+json" \
+                --output "release/$ARTIFACT_NAME.zip"
+            done
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List downloaded artifacts
+        run: |
+          ls -R release
