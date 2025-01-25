@@ -21,6 +21,7 @@ jobs:
       with:
         update: true
         install: >-
+          base-devel
           mingw-w64-x86_64-toolchain
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-ninja
@@ -35,7 +36,6 @@ jobs:
           libtool
           make
           pkg-config
-          gettext
 
     - name: Download ARIA2 source code
       shell: bash
@@ -96,6 +96,7 @@ jobs:
       with:
         update: true
         install: >-
+          base-devel
           mingw-w64-i686-toolchain
           mingw-w64-i686-cmake
           mingw-w64-i686-ninja
@@ -110,7 +111,6 @@ jobs:
           libtool
           make
           pkg-config
-          gettext
 
     - name: Download ARIA2 source code
       shell: bash
