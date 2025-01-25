@@ -23,19 +23,12 @@ jobs:
         install: >-
           base-devel
           mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-ninja
           mingw-w64-x86_64-c-ares
           mingw-w64-x86_64-expat
           mingw-w64-x86_64-sqlite3
           mingw-w64-x86_64-zlib
           mingw-w64-x86_64-libssh2
           mingw-w64-x86_64-cppunit
-          autoconf
-          automake
-          libtool
-          make
-          pkg-config
 
     - name: Download ARIA2 source code
       shell: bash
@@ -98,19 +91,12 @@ jobs:
         install: >-
           base-devel
           mingw-w64-i686-toolchain
-          mingw-w64-i686-cmake
-          mingw-w64-i686-ninja
           mingw-w64-i686-c-ares
           mingw-w64-i686-expat
           mingw-w64-i686-sqlite3
           mingw-w64-i686-zlib
           mingw-w64-i686-libssh2
           mingw-w64-i686-cppunit
-          autoconf
-          automake
-          libtool
-          make
-          pkg-config
 
     - name: Download ARIA2 source code
       shell: bash
