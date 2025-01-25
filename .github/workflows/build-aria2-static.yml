@@ -29,6 +29,7 @@ jobs:
           mingw-w64-x86_64-zlib
           mingw-w64-x86_64-libssh2
           mingw-w64-x86_64-cppunit
+          autoreconf
 
     - name: Download ARIA2 source code
       shell: bash
@@ -97,6 +98,7 @@ jobs:
           mingw-w64-i686-zlib
           mingw-w64-i686-libssh2
           mingw-w64-i686-cppunit
+          autoreconf
 
     - name: Download ARIA2 source code
       shell: bash
