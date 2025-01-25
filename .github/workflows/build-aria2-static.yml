@@ -15,8 +15,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'  # 确保子模块被递归克隆
 
     - name: Set up MSYS2 (64-bit)
       uses: msys2/setup-msys2@v2
@@ -40,8 +38,7 @@ jobs:
     - name: Download ARIA2 source code
       shell: bash
       run: |
-        # 使用 --recurse-submodules 完全克隆仓库和子模块
-        git clone --depth 1 --recurse-submodules https://github.com/aria2/aria2.git aria2-source
+        git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
 
         # 应用补丁文件
@@ -58,24 +55,26 @@ jobs:
       shell: msys2 {0}
       run: |
         cd $GITHUB_WORKSPACE/aria2-source
-        autoreconf -i -f  # 强制重新生成 configure 脚本
-        cd deps/wslay
-        autoreconf -i -f  # 强制重新生成 wslay 的 configure 脚本
-        cd ../..
+        autoreconf -i
 
     - name: Configure and build 64-bit ARIA2
       shell: msys2 {0}
       run: |
         export HOST=x86_64-w64-mingw32
-        export PREFIX=/mingw64
-        export CPPFLAGS="-I$PREFIX/include"
-        export LDFLAGS="-L$PREFIX/lib"
-        export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
+        export PREFIX=/usr/local/$HOST
+        export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+        export CPPFLAGS="-I$PREFIX/include -I/usr/$HOST/include"
+        export LDFLAGS="-L$PREFIX/lib -L/usr/$HOST/lib -static -static-libgcc -static-libstdc++"
         export ARIA2_STATIC=yes
 
         cd $GITHUB_WORKSPACE/aria2-source
-        ./configure --host=$HOST --prefix=$PREFIX --enable-static --disable-shared
+        ./configure \
+          --host=$HOST \
+          --prefix=$PREFIX \
+          --enable-static \
+          --disable-shared
         make -j$(nproc)
+        $HOST-strip src/aria2c.exe
 
     - name: Check 64-bit ARIA2 version
       shell: cmd
@@ -94,8 +93,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'  # 确保子模块被递归克隆
 
     - name: Set up MSYS2 (32-bit)
       uses: msys2/setup-msys2@v2
@@ -119,8 +116,7 @@ jobs:
     - name: Download ARIA2 source code
       shell: bash
       run: |
-        # 使用 --recurse-submodules 完全克隆仓库和子模块
-        git clone --depth 1 --recurse-submodules https://github.com/aria2/aria2.git aria2-source
+        git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
 
         # 应用补丁文件
@@ -137,24 +133,26 @@ jobs:
       shell: msys2 {0}
       run: |
         cd $GITHUB_WORKSPACE/aria2-source
-        autoreconf -i -f  # 强制重新生成 configure 脚本
-        cd deps/wslay
-        autoreconf -i -f  # 强制重新生成 wslay 的 configure 脚本
-        cd ../..
+        autoreconf -i
 
     - name: Configure and build 32-bit ARIA2
       shell: msys2 {0}
       run: |
         export HOST=i686-w64-mingw32
-        export PREFIX=/mingw32
-        export CPPFLAGS="-I$PREFIX/include"
-        export LDFLAGS="-L$PREFIX/lib"
-        export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
+        export PREFIX=/usr/local/$HOST
+        export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+        export CPPFLAGS="-I$PREFIX/include -I/usr/$HOST/include"
+        export LDFLAGS="-L$PREFIX/lib -L/usr/$HOST/lib -static -static-libgcc -static-libstdc++"
         export ARIA2_STATIC=yes
 
         cd $GITHUB_WORKSPACE/aria2-source
-        ./configure --host=$HOST --prefix=$PREFIX --enable-static --disable-shared
+        ./configure \
+          --host=$HOST \
+          --prefix=$PREFIX \
+          --enable-static \
+          --disable-shared
         make -j$(nproc)
+        $HOST-strip src/aria2c.exe
 
     - name: Check 32-bit ARIA2 version
       shell: cmd
