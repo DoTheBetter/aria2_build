@@ -189,7 +189,7 @@ jobs:
             --enable-static \
             --disable-shared \
             CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
-            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc"
+            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc -static-libstdc++"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
 
