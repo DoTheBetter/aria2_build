@@ -227,26 +227,31 @@ jobs:
               LDFLAGS="-static"
           fi
           make -j$(nproc)
-          sudo make install
+          #sudo make install
           cd ..
 
       - name: Run aria2 tests
         run: |
           cd aria2
           make check
+          ./src/aria2c --version
 
-      - name: Verify aria2 compilation
+      - name: Get aria2 version
+        id: get-aria2-version
         run: |
-          /usr/local/bin/aria2c --version || exit 1
+          cd aria2
+          ARIA2_VERSION=$(grep 'PACKAGE_VERSION=' configure | cut -d"'" -f2)
+          echo "ARIA2_VERSION=${ARIA2_VERSION}" >> $GITHUB_ENV
+          echo "aria2 version: ${ARIA2_VERSION}"
 
       - name: Package aria2 binary
         run: |
           mkdir -p release
-          cp /usr/local/bin/aria2c "release/aria2c-${{ env.ARCH_SUFFIX }}"
-          strip "release/aria2c-${{ env.ARCH_SUFFIX }}"
+          cp aria2/src/aria2c "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
+          strip "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aria2-${{ env.ARCH_SUFFIX }}
-          path: release/aria2c-${{ env.ARCH_SUFFIX }}
+          name: aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
+          path: release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
