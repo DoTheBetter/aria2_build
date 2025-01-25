@@ -15,6 +15,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'  # 确保子模块被递归克隆
 
     - name: Set up MSYS2 (64-bit)
       uses: msys2/setup-msys2@v2
@@ -34,7 +36,6 @@ jobs:
           libtool
           pkg-config
           gettext-devel
-          mingw-w64-x86_64-gcc
 
     - name: Download ARIA2 source code
       shell: bash
@@ -58,6 +59,9 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/aria2-source
         autoreconf -i
+        cd deps/wslay
+        autoreconf -i  # 手动生成 wslay 的 configure 脚本
+        cd ../..
 
     - name: Configure and build 64-bit ARIA2
       shell: msys2 {0}
@@ -70,7 +74,7 @@ jobs:
         export ARIA2_STATIC=yes
 
         cd $GITHUB_WORKSPACE/aria2-source
-        ./mingw-config  # 使用 mingw-config 命令
+        ./configure --host=$HOST --prefix=$PREFIX --enable-static --disable-shared
         make -j$(nproc)
 
     - name: Check 64-bit ARIA2 version
@@ -90,6 +94,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'  # 确保子模块被递归克隆
 
     - name: Set up MSYS2 (32-bit)
       uses: msys2/setup-msys2@v2
@@ -109,7 +115,6 @@ jobs:
           libtool
           pkg-config
           gettext-devel
-          mingw-w64-i686-gcc
 
     - name: Download ARIA2 source code
       shell: bash
@@ -133,6 +138,9 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/aria2-source
         autoreconf -i
+        cd deps/wslay
+        autoreconf -i  # 手动生成 wslay 的 configure 脚本
+        cd ../..
 
     - name: Configure and build 32-bit ARIA2
       shell: msys2 {0}
@@ -145,7 +153,7 @@ jobs:
         export ARIA2_STATIC=yes
 
         cd $GITHUB_WORKSPACE/aria2-source
-        ./mingw-config  # 使用 mingw-config 命令
+        ./configure --host=$HOST --prefix=$PREFIX --enable-static --disable-shared
         make -j$(nproc)
 
     - name: Check 32-bit ARIA2 version
