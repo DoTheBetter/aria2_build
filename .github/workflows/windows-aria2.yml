@@ -174,11 +174,9 @@ jobs:
             --enable-static \
             --disable-shared \
             CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
-            CFLAGS="-Os -flto" \
-            CXXFLAGS="-Os -flto" \
             LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc -static-libstdc++"
           make -j$(nproc)
-          ${{ matrix.host }}-strip --strip-all src/aria2c.exe
+          ${{ matrix.host }}-strip src/aria2c.exe
           upx --best src/aria2c.exe
 
       - name: Get aria2 version
