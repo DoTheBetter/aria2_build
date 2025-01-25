@@ -14,7 +14,7 @@ jobs:
     name: Build 64-bit ARIA2
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up MSYS2 (64-bit)
       uses: msys2/setup-msys2@v2
@@ -38,7 +38,8 @@ jobs:
     - name: Download ARIA2 source code
       shell: bash
       run: |
-        git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
+        # 使用 --recurse-submodules 完全克隆仓库和子模块
+        git clone --depth 1 --recurse-submodules https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
 
         # 应用补丁文件
@@ -68,7 +69,7 @@ jobs:
         export ARIA2_STATIC=yes
 
         cd $GITHUB_WORKSPACE/aria2-source
-        ./mingw-config
+        ./mingw-config  # 使用 mingw-config 命令
         make -j$(nproc)
 
     - name: Check 64-bit ARIA2 version
@@ -87,7 +88,7 @@ jobs:
     name: Build 32-bit ARIA2
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up MSYS2 (32-bit)
       uses: msys2/setup-msys2@v2
@@ -111,7 +112,8 @@ jobs:
     - name: Download ARIA2 source code
       shell: bash
       run: |
-        git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
+        # 使用 --recurse-submodules 完全克隆仓库和子模块
+        git clone --depth 1 --recurse-submodules https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
 
         # 应用补丁文件
@@ -141,7 +143,7 @@ jobs:
         export ARIA2_STATIC=yes
 
         cd $GITHUB_WORKSPACE/aria2-source
-        ./mingw-config
+        ./mingw-config  # 使用 mingw-config 命令
         make -j$(nproc)
 
     - name: Check 32-bit ARIA2 version
