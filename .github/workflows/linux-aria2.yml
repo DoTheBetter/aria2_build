@@ -84,9 +84,9 @@ jobs:
           tar xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
           cd cppunit-${{ env.CPPUNIT_VERSION }}
           if [ -n "$HOST" ]; then
-            ./configure --prefix=/usr/local --host=$HOST
+            ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
           else
-            ./configure --prefix=/usr/local
+            ./configure --prefix=/usr/local --disable-shared --enable-static
           fi
           make -j$(nproc)
           sudo make install
@@ -98,9 +98,9 @@ jobs:
           tar xzf openssl-${{ env.OPENSSL_VERSION }}.tar.gz
           cd openssl-${{ env.OPENSSL_VERSION }}
           if [ -n "$HOST" ]; then
-            ./Configure --prefix=/usr/local --openssldir=/usr/local/ssl $HOST
+            ./Configure --prefix=/usr/local --openssldir=/usr/local/ssl $HOST no-shared
           else
-            ./config --prefix=/usr/local --openssldir=/usr/local/ssl
+            ./config --prefix=/usr/local --openssldir=/usr/local/ssl no-shared
           fi
           make -j$(nproc)
           sudo make install
@@ -112,9 +112,9 @@ jobs:
           tar xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
           cd c-ares-${{ env.CARES_VERSION }}
           if [ -n "$HOST" ]; then
-            ./configure --prefix=/usr/local --host=$HOST
+            ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
           else
-            ./configure --prefix=/usr/local
+            ./configure --prefix=/usr/local --disable-shared --enable-static
           fi
           make -j$(nproc)
           sudo make install
@@ -128,9 +128,9 @@ jobs:
           tar xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
           cd expat-${{ env.EXPAT_VERSION }}
           if [ -n "$HOST" ]; then
-            ./configure --prefix=/usr/local --host=$HOST
+            ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
           else
-            ./configure --prefix=/usr/local
+            ./configure --prefix=/usr/local --disable-shared --enable-static
           fi
           make -j$(nproc)
           sudo make install
@@ -142,9 +142,9 @@ jobs:
           tar xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
           cd zlib-${{ env.ZLIB_VERSION }}
           if [ -n "$HOST" ]; then
-            ./configure --prefix=/usr/local --host=$HOST
+            ./configure --prefix=/usr/local --host=$HOST --static
           else
-            ./configure --prefix=/usr/local
+            ./configure --prefix=/usr/local --static
           fi
           make -j$(nproc)
           sudo make install
@@ -156,9 +156,9 @@ jobs:
           tar xzf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
           cd sqlite-autoconf-${{ env.SQLITE_VERSION }}
           if [ -n "$HOST" ]; then
-            ./configure --prefix=/usr/local --host=$HOST
+            ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
           else
-            ./configure --prefix=/usr/local
+            ./configure --prefix=/usr/local --disable-shared --enable-static
           fi
           make -j$(nproc)
           sudo make install
@@ -170,9 +170,9 @@ jobs:
           tar xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
           cd libssh2-${{ env.LIBSSH2_VERSION }}
           if [ -n "$HOST" ]; then
-            ./configure --prefix=/usr/local --with-openssl --host=$HOST
+            ./configure --prefix=/usr/local --with-openssl --host=$HOST --disable-shared --enable-static
           else
-            ./configure --prefix=/usr/local --with-openssl
+            ./configure --prefix=/usr/local --with-openssl --disable-shared --enable-static
           fi
           make -j$(nproc)
           sudo make install
@@ -205,7 +205,8 @@ jobs:
               --with-libcares \
               --with-sqlite3 \
               --with-libssh2 \
-              --host=$HOST
+              --host=$HOST \
+              LDFLAGS="-static"
           else
             ./configure \
               --prefix=/usr/local \
@@ -222,7 +223,8 @@ jobs:
               --with-libz \
               --with-libcares \
               --with-sqlite3 \
-              --with-libssh2
+              --with-libssh2 \
+              LDFLAGS="-static"
           fi
           make -j$(nproc)
           sudo make install
