@@ -30,6 +30,9 @@ jobs:
           mingw-w64-x86_64-zlib
           mingw-w64-x86_64-libssh2
           mingw-w64-x86_64-cppunit
+          autoconf
+          automake
+          libtool
 
     - name: Download ARIA2 source code
       shell: bash
@@ -46,6 +49,9 @@ jobs:
         else
           echo "No patch directory found. Skipping patch application."
         fi
+
+        # 生成 configure 文件
+        autoreconf -i
 
     - name: Configure and build 64-bit ARIA2
       shell: msys2 {0}
@@ -93,6 +99,9 @@ jobs:
           mingw-w64-i686-zlib
           mingw-w64-i686-libssh2
           mingw-w64-i686-cppunit
+          autoconf
+          automake
+          libtool
 
     - name: Download ARIA2 source code
       shell: bash
@@ -109,6 +118,9 @@ jobs:
         else
           echo "No patch directory found. Skipping patch application."
         fi
+
+        # 生成 configure 文件
+        autoreconf -i
 
     - name: Configure and build 32-bit ARIA2
       shell: msys2 {0}
