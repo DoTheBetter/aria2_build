@@ -18,6 +18,7 @@ jobs:
         with:
           path: release
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
           pattern: aria2-${{ env.ARIA2_VERSION }}-*
           merge-multiple: true
 
