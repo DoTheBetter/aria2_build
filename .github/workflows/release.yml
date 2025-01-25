@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+env:
+  ARIA2_VERSION: "1.37.0"
+  
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          pattern: aria2-${{ env.ARIA2_VERSION }}-*
+          merge-multiple: true
+
+      - name: Merge files
+        run: |
+          cd release
+          ls
+
