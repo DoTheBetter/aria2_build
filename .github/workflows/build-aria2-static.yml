@@ -36,10 +36,15 @@ jobs:
       run: |
         git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
+
+        # 应用补丁文件
         if [ -d "$GITHUB_WORKSPACE/patch" ]; then
-          for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+          for patch_file in $(cygpath -u "$GITHUB_WORKSPACE/patch/*.patch"); do
+            echo "Applying patch: $patch_file"
             patch -p1 < "$patch_file" || exit 1
           done
+        else
+          echo "No patch directory found. Skipping patch application."
         fi
 
     - name: Configure and build 64-bit ARIA2
@@ -94,10 +99,15 @@ jobs:
       run: |
         git clone --depth 1 https://github.com/aria2/aria2.git aria2-source
         cd aria2-source
+
+        # 应用补丁文件
         if [ -d "$GITHUB_WORKSPACE/patch" ]; then
-          for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+          for patch_file in $(cygpath -u "$GITHUB_WORKSPACE/patch/*.patch"); do
+            echo "Applying patch: $patch_file"
             patch -p1 < "$patch_file" || exit 1
           done
+        else
+          echo "No patch directory found. Skipping patch application."
         fi
 
     - name: Configure and build 32-bit ARIA2
