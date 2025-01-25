@@ -17,6 +17,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           pattern: aria2-${{ env.ARIA2_VERSION }}-*
           merge-multiple: true
 
