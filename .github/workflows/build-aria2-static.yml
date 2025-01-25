@@ -33,6 +33,7 @@ jobs:
           autoconf
           automake
           libtool
+          make
 
     - name: Download ARIA2 source code
       shell: bash
@@ -102,6 +103,7 @@ jobs:
           autoconf
           automake
           libtool
+          make
 
     - name: Download ARIA2 source code
       shell: bash
