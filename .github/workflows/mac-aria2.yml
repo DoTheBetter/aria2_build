@@ -47,8 +47,21 @@ jobs:
           make check
           ./src/aria2c --version
 
+      - name: Extract aria2 version
+        id: aria2_version
+        run: |
+          cd aria2
+          ARIA2_VERSION=$(./src/aria2c --version | head -n 1 | awk '{print $3}')
+          echo "ARIA2_VERSION=$ARIA2_VERSION" >> $GITHUB_ENV
+          echo "Extracted ARIA2_VERSION: $ARIA2_VERSION"
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          cp aria2/src/aria2c release/aria2-${{ env.ARIA2_VERSION }}-macos-64bit
+
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: aria2-macos-64bit
-          path: aria2/src/aria2c
+          path: release/aria2-${{ env.ARIA2_VERSION }}-macos-64bit
