@@ -52,7 +52,10 @@ jobs:
           echo "No patch directory found. Skipping patch application."
         fi
 
-        # 生成 configure 文件
+    - name: Generate configure script
+      shell: msys2 {0}
+      run: |
+        cd $GITHUB_WORKSPACE/aria2-source
         autoreconf -i
 
     - name: Configure and build 64-bit ARIA2
@@ -123,7 +126,10 @@ jobs:
           echo "No patch directory found. Skipping patch application."
         fi
 
-        # 生成 configure 文件
+    - name: Generate configure script
+      shell: msys2 {0}
+      run: |
+        cd $GITHUB_WORKSPACE/aria2-source
         autoreconf -i
 
     - name: Configure and build 32-bit ARIA2
