@@ -232,7 +232,7 @@ jobs:
       - name: Generate SHA256 checksum
         run: |
           cd aria2/src
-          sha256sum aria2c > aria2c.sha256
+          shasum -a 256 aria2c > aria2c.sha256
           cat aria2c.sha256
 
       - name: Get aria2 version
