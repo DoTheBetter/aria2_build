@@ -13,7 +13,6 @@ jobs:
   build:
     runs-on: windows-latest
 
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -37,6 +36,9 @@ jobs:
             openssl-devel
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-winpthreads
+            autoconf
+            automake
+            libtool
 
       - name: Download and extract dependencies
         shell: msys2 {0}
