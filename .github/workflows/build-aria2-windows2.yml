@@ -118,7 +118,7 @@ jobs:
           git clone --depth 1 https://github.com/aria2/aria2
           cd aria2
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
-            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+            for patch_file in $(cygpath -u "$GITHUB_WORKSPACE/patch/*.patch"); do
               patch -p1 < "$patch_file" || exit 1
             done
           fi
