@@ -39,6 +39,8 @@ jobs:
             autoconf
             automake
             libtool
+            zlib
+            icu
             pkg-config
             gettext-devel
 
@@ -147,7 +149,7 @@ jobs:
               --with-cppunit-prefix=/usr/local/x86_64-w64-mingw32 \
               ARIA2_STATIC=yes \
               CPPFLAGS="-I/usr/local/x86_64-w64-mingw32/include" \
-              LDFLAGS="-L/usr/local/x86_64-w64-mingw32/lib -Wl,--gc-sections,--build-id=none" \
+              LDFLAGS="-L/usr/local/x86_64-w64-mingw32/lib -lz -licuuc -licudata -lm" \
               PKG_CONFIG_PATH="/usr/local/x86_64-w64-mingw32/lib/pkgconfig"
           make -j$(nproc)
           strip -s src/aria2c.exe
