@@ -53,31 +53,32 @@ jobs:
             export CXX="g++"
             export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-amd64"
+            export HOST="x86_64-linux-gnu"
             sudo apt-get install -y gcc-multilib
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             export CC="aarch64-linux-gnu-gcc"
             export CXX="aarch64-linux-gnu-g++"
             export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-arm64"
-            sudo apt-get install -y gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu
             export HOST="aarch64-linux-gnu"
+            sudo apt-get install -y gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu
           elif [ "${{ matrix.arch }}" = "386" ]; then
             export CC="gcc -m32"
             export CXX="g++ -m32"
             export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
             export ARCH_SUFFIX="linux-386"
-            sudo apt-get install -y gcc-multilib
             export HOST="i386-linux-gnu"
+            sudo apt-get install -y gcc-multilib
           elif [ "${{ matrix.arch }}" = "armv7" ]; then
             export CC="arm-linux-gnueabihf-gcc"
             export CXX="arm-linux-gnueabihf-g++"
             export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
             export ARCH_SUFFIX="linux-armv7"
-            sudo apt-get install -y gcc-11-arm-linux-gnueabihf g++-11-arm-linux-gnueabihf
             export HOST="arm-linux-gnueabihf"
+            sudo apt-get install -y gcc-11-arm-linux-gnueabihf g++-11-arm-linux-gnueabihf
           fi
           echo "ARCH_SUFFIX=$ARCH_SUFFIX" >> $GITHUB_ENV
-
+      
       - name: Build and install CppUnit
         run: |
           wget http://dev-www.libreoffice.org/src/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
@@ -90,7 +91,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install OpenSSL
         run: |
@@ -104,7 +104,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install c-ares
         run: |
@@ -118,7 +117,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install expat
         run: |
@@ -134,7 +132,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install zlib
         run: |
@@ -148,7 +145,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install sqlite3
         run: |
@@ -162,7 +158,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install libssh2
         run: |
@@ -176,7 +171,6 @@ jobs:
           fi
           make -j$(nproc)
           sudo make install
-          cd ..
 
       - name: Build and install aria2 (static)
         run: |
@@ -227,14 +221,19 @@ jobs:
               LDFLAGS="-static"
           fi
           make -j$(nproc)
-          #sudo make install
-          cd ..
+          strip src/aria2c
 
       - name: Run aria2 tests
         run: |
           cd aria2
           make check
           ./src/aria2c --version
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd aria2/src
+          sha256sum aria2c > aria2c.sha256
+          cat aria2c.sha256
 
       - name: Get aria2 version
         id: get-aria2-version
@@ -248,10 +247,12 @@ jobs:
         run: |
           mkdir -p release
           cp aria2/src/aria2c "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
-          strip "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
+          cp aria2/src/aria2c.sha256 "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}.sha256"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
-          path: release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
+          path: |
+            release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
+            release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}.sha256
