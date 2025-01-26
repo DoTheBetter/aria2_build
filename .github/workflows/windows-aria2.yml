@@ -190,13 +190,17 @@ jobs:
       - name: Package aria2 binary
         run: |
           mkdir -p release
-          cp aria2/src/aria2c.exe release/aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}.exe
-          cp aria2/src/aria2c.exe.sha256 release/aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}.exe.sha256
+          BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}.exe"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
 
-      - name: Upload artifacts
+          cp aria2/src/aria2c.exe "release/$BINARY_NAME"
+          cp aria2/src/aria2c.exe.sha256 "release/$BINARY_NAME.sha256"
+          sed -i "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
+          
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}
+          name: ${{ env.BINARY_NAME }}
           path: |
-            release/aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}.exe
-            release/aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}.exe.sha256
+            release/${{ env.BINARY_NAME }}
+            release/${{ env.BINARY_NAME }}.sha256

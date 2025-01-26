@@ -246,13 +246,17 @@ jobs:
       - name: Package aria2 binary
         run: |
           mkdir -p release
-          cp aria2/src/aria2c "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
-          cp aria2/src/aria2c.sha256 "release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}.sha256"
+          BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
 
+          cp aria2/src/aria2c "release/$BINARY_NAME"
+          cp aria2/src/aria2c.sha256 "release/$BINARY_NAME.sha256"
+          sed -i "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
+          
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
+          name: ${{ env.BINARY_NAME }}
           path: |
-            release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}
-            release/aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}.sha256
+            release/${{ env.BINARY_NAME }}
+            release/${{ env.BINARY_NAME }}.sha256
