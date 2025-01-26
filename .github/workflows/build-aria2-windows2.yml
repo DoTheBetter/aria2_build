@@ -1,12 +1,7 @@
 name: Build aria2
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 env:
   EXPAT_VERSION: "2.6.4"
