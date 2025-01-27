@@ -12,7 +12,7 @@ jobs:
         os: [linux-386, linux-amd64, linux-arm64, linux-armv7]
         include:
           - os: linux-386
-            docker_image: ubuntu:latest
+            docker_image: i386/ubuntu  # 修改为 i386/ubuntu 以适配 linux/386 架构
             docker_platform: linux/386
             command: "./aria2-1.37.0-linux-386 --version"
           - os: linux-amd64
@@ -20,11 +20,11 @@ jobs:
             docker_platform: linux/amd64
             command: "./aria2-1.37.0-linux-amd64 --version"
           - os: linux-arm64
-            docker_image: ubuntu:latest
+            docker_image: arm64v8/ubuntu  # 修改为 arm64v8/ubuntu 以适配 linux-arm64 架构
             docker_platform: linux/arm64/v8
             command: "./aria2-1.37.0-linux-arm64 --version"
           - os: linux-armv7
-            docker_image: ubuntu:latest
+            docker_image: arm32v7/ubuntu  # 修改为 arm32v7/ubuntu 以适配 linux-armv7 架构
             docker_platform: linux/arm/v7
             command: "./aria2-1.37.0-linux-armv7 --version"
     steps:
