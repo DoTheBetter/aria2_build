@@ -31,14 +31,33 @@ jobs:
 
       - name: Verify SHA256 checksum
         run: |
-          SHA256_FILE="aria2-${{ env.VERSION }}-${{ matrix.system }}.sha256"
+          ASSET_NAME="aria2-${{ env.VERSION }}-${{ matrix.system }}"
           if [[ "${{ matrix.system }}" == *"win"* ]]; then
-            SHA256_FILE="$SHA256_FILE.exe.sha256"
+            ASSET_NAME="$ASSET_NAME.exe"
           fi
+          SHA256_FILE="$ASSET_NAME.sha256"
+      
+          # 调试：打印 ASSET_NAME 和 SHA256_FILE
+          echo "ASSET_NAME: $ASSET_NAME"
+          echo "SHA256_FILE: $SHA256_FILE"
+      
+          # 获取 SHA256 文件的下载 URL
           SHA256_URL=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r ".assets[] | select(.name == \"$SHA256_FILE\") | .browser_download_url")
+      
+          # 调试：打印 SHA256_URL
+          echo "SHA256_URL: $SHA256_URL"
+      
+          if [ -z "$SHA256_URL" ]; then
+            echo "Error: SHA256 file not found in release assets."
+            exit 1
+          fi
+      
+          # 下载 SHA256 文件
           curl -L -o $SHA256_FILE $SHA256_URL
+      
+          # 验证 SHA256 校验和
           sha256sum -c $SHA256_FILE
-
+      
       - name: Set up Docker
         uses: docker/setup-qemu-action@v2
         with:
