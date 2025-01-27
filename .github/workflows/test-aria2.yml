@@ -3,6 +3,7 @@ name: Aria2 Release Testing
 on:
   workflow_dispatch:
 
+
 jobs:
   test-aria2:
     runs-on: ubuntu-latest
@@ -50,4 +51,4 @@ jobs:
 
       - name: Run tests in Docker
         run: |
-          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apk add --no-cache libstdc++; ls -l /app; chmod +x /app/${{ matrix.os }}; ${{ matrix.command }}"
+          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apk add --no-cache libstdc++; ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; ./aria2-1.37.0-${{ matrix.os }} --version"
