@@ -66,11 +66,11 @@ jobs:
           mkdir -p release
           BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-macos-64bit"
           echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
-
+      
           cp aria2/src/aria2c "release/$BINARY_NAME"
           cp aria2/src/aria2c.sha256 "release/$BINARY_NAME.sha256"
-          sed -i "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
-          
+          sed -i '' "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
+                
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
