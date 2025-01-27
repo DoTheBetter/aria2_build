@@ -6,6 +6,16 @@ ARG VERSION
 
 COPY aria2-$VERSION-macos-64bit /usr/local/bin/aria2
 
+# 调试：检查文件是否存在
+RUN ls -l /usr/local/bin/aria2
+
+# 设置执行权限
 RUN chmod +x /usr/local/bin/aria2
+
+# 调试：检查文件权限
+RUN ls -l /usr/local/bin/aria2
+
+# 调试：检查容器平台
+RUN uname -m
 
 CMD ["aria2", "--version"]
