@@ -1,4 +1,6 @@
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
 
 ARG VERSION
 

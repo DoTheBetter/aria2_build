@@ -64,7 +64,8 @@ jobs:
           fi
 
           # 构建并运行 Docker 容器
-          docker build -t aria2-test-${{ matrix.system }} -f Dockerfile.${{ matrix.system }} \
+          docker build -t aria2-test-${{ matrix.system }} \
+            -f test/Dockerfile.${{ matrix.system }} \
             --build-arg VERSION=${{ env.VERSION }} \
             --build-arg BASE_IMAGE=$BASE_IMAGE .
           docker run --rm aria2-test-${{ matrix.system }}

@@ -1,4 +1,6 @@
-FROM alpine:latest
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
 
 ARG VERSION
 
