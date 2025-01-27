@@ -9,10 +9,26 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]  # 添加 windows-latest
         system: [linux-386, linux-amd64, linux-arm64, linux-armv7, macos-64bit, win-32bit, win-64bit]
+        exclude:
+          - os: ubuntu-latest
+            system: win-32bit
+          - os: ubuntu-latest
+            system: win-64bit
+          - os: windows-latest
+            system: linux-386
+          - os: windows-latest
+            system: linux-amd64
+          - os: windows-latest
+            system: linux-arm64
+          - os: windows-latest
+            system: linux-armv7
+          - os: windows-latest
+            system: macos-64bit
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -65,7 +81,6 @@ jobs:
 
       - name: Build and run Docker container
         run: |
-          # 根据系统架构设置基础镜像
           if [[ "${{ matrix.system }}" == "linux-386" ]]; then
             BASE_IMAGE="i386/alpine:3.18"
           elif [[ "${{ matrix.system }}" == "linux-amd64" ]]; then
@@ -75,7 +90,7 @@ jobs:
           elif [[ "${{ matrix.system }}" == "linux-armv7" ]]; then
             BASE_IMAGE="arm32v7/alpine:3.18"
           elif [[ "${{ matrix.system }}" == "macos-64bit" ]]; then
-            BASE_IMAGE="alpine:3.18"  # macOS 使用 Alpine 作为模拟环境
+            BASE_IMAGE="alpine:3.18"
           elif [[ "${{ matrix.system }}" == "win-32bit" ]]; then
             BASE_IMAGE="mcr.microsoft.com/windows/servercore:ltsc2022"
           elif [[ "${{ matrix.system }}" == "win-64bit" ]]; then
