@@ -37,13 +37,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ASSET_NAME="aria2-1.37.0-${{ matrix.os }}"
+          SHA256_NAME="${ASSET_NAME}.sha256"
           RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.id')
           ASSET_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets" | jq -r ".[] | select(.name == \"$ASSET_NAME\") | .url")
+          SHA256_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets" | jq -r ".[] | select(.name == \"$SHA256_NAME\") | .url")
           curl -s -L -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/octet-stream" $ASSET_URL -o $ASSET_NAME
+          curl -s -L -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/octet-stream" $SHA256_URL -o $SHA256_NAME
           chmod +x $ASSET_NAME
           ls -l $ASSET_NAME
           file $ASSET_NAME
-
+          CALCULATED_SHA256=$(sha256sum $ASSET_NAME | awk '{print $1}')
+          EXPECTED_SHA256=$(cat $SHA256_NAME | awk '{print $1}')
+          if [ "$CALCULATED_SHA256" != "$EXPECTED_SHA256" ]; then
+            echo "File hash does not match. Downloaded file may be corrupted."
+            exit 1
+          fi
+      
       - name: Set up QEMU for multi-architecture support
         uses: docker/setup-qemu-action@v2
 
@@ -52,4 +61,4 @@ jobs:
 
       - name: Run tests in Docker
         run: |
-          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apt-get update && apt-get install -y libxml2; ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; file /app/aria2-1.37.0-${{ matrix.os }}; echo \$PATH; /app/aria2-1.37.0-${{ matrix.os }} --version"
+          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apt-get update && apt-get install -y libxml2 file; ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; file /app/aria2-1.37.0-${{ matrix.os }}; echo \$PATH; /app/aria2-1.37.0-${{ matrix.os }} --version"
