@@ -82,15 +82,15 @@ jobs:
       - name: Build and run Docker container
         run: |
           if [[ "${{ matrix.system }}" == "linux-386" ]]; then
-            BASE_IMAGE="i386/alpine:3.18"
+            BASE_IMAGE="i386/alpine:latest"
           elif [[ "${{ matrix.system }}" == "linux-amd64" ]]; then
-            BASE_IMAGE="alpine:3.18"
+            BASE_IMAGE="amd64/alpine:latest"
           elif [[ "${{ matrix.system }}" == "linux-arm64" ]]; then
-            BASE_IMAGE="arm64v8/alpine:3.18"
+            BASE_IMAGE="arm64v8/alpine:latest"
           elif [[ "${{ matrix.system }}" == "linux-armv7" ]]; then
-            BASE_IMAGE="arm32v7/alpine:3.18"
+            BASE_IMAGE="arm32v7/alpine:latest"
           elif [[ "${{ matrix.system }}" == "macos-64bit" ]]; then
-            BASE_IMAGE="alpine:3.18"
+            BASE_IMAGE="alpine:latest"
           elif [[ "${{ matrix.system }}" == "win-32bit" ]]; then
             BASE_IMAGE="mcr.microsoft.com/windows/servercore:ltsc2022"
           elif [[ "${{ matrix.system }}" == "win-64bit" ]]; then

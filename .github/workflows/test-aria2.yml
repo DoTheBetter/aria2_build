@@ -1,0 +1,52 @@
+name: Aria2 Release Testing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-aria2:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux-386, linux-amd64, linux-arm64, linux-armv7]
+        include:
+          - os: linux-386
+            docker_image: alpine:latest
+            docker_platform: linux/386
+            command: "./aria2-1.37.0-linux-386 --version"
+          - os: linux-amd64
+            docker_image: alpine:latest
+            docker_platform: linux/amd64
+            command: "./aria2-1.37.0-linux-amd64 --version"
+          - os: linux-arm64
+            docker_image: alpine:latest
+            docker_platform: linux/arm64/v8
+            command: "./aria2-1.37.0-linux-arm64 --version"
+          - os: linux-armv7
+            docker_image: alpine:latest
+            docker_platform: linux/arm/v7
+            command: "./aria2-1.37.0-linux-armv7 --version"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download release asset
+        id: download
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ASSET_NAME="aria2-1.37.0-${{ matrix.os }}"
+          RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.id')
+          ASSET_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets" | jq -r ".[] | select(.name == \"$ASSET_NAME\") | .url")
+          curl -s -L -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/octet-stream" $ASSET_URL -o $ASSET_NAME
+          chmod +x $ASSET_NAME
+
+      - name: Set up QEMU for multi-architecture support
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Run tests in Docker
+        run: |
+          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "${{ matrix.command }}"
