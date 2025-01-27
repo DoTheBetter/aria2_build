@@ -6,6 +6,7 @@ on:
 env:
   VERSION: "1.37.0"
 
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -45,5 +46,25 @@ jobs:
 
       - name: Build and run Docker container
         run: |
-          docker build -t aria2-test-${{ matrix.system }} -f test/Dockerfile.${{ matrix.system }} --build-arg VERSION=${{ env.VERSION }} .
+          # 根据系统架构设置基础镜像
+          if [[ "${{ matrix.system }}" == "linux-386" ]]; then
+            BASE_IMAGE="i386/alpine:3.18"
+          elif [[ "${{ matrix.system }}" == "linux-amd64" ]]; then
+            BASE_IMAGE="alpine:3.18"
+          elif [[ "${{ matrix.system }}" == "linux-arm64" ]]; then
+            BASE_IMAGE="arm64v8/alpine:3.18"
+          elif [[ "${{ matrix.system }}" == "linux-armv7" ]]; then
+            BASE_IMAGE="arm32v7/alpine:3.18"
+          elif [[ "${{ matrix.system }}" == "macos-64bit" ]]; then
+            BASE_IMAGE="alpine:3.18"  # macOS 使用 Alpine 作为模拟环境
+          elif [[ "${{ matrix.system }}" == "win-32bit" ]]; then
+            BASE_IMAGE="mcr.microsoft.com/windows/servercore:ltsc2022"
+          elif [[ "${{ matrix.system }}" == "win-64bit" ]]; then
+            BASE_IMAGE="mcr.microsoft.com/windows/nanoserver:ltsc2022"
+          fi
+
+          # 构建并运行 Docker 容器
+          docker build -t aria2-test-${{ matrix.system }} -f Dockerfile.${{ matrix.system }} \
+            --build-arg VERSION=${{ env.VERSION }} \
+            --build-arg BASE_IMAGE=$BASE_IMAGE .
           docker run --rm aria2-test-${{ matrix.system }}
