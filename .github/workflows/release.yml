@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+env:
+  ARIA2_VERSION: "1.37.0"
+
+jobs:
+  Release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create release directory
+        run: mkdir -p release
+
+      - name: Get all workflow run IDs
+        id: get_run_ids
+        run: |
+          RUN_IDS=$(gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[] | .id' \
+            --paginate)
+          echo "run_ids=$(echo $RUN_IDS | tr '\n' ' ')" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download artifacts with specific prefix
+        run: |
+          for RUN_ID in ${{ steps.get_run_ids.outputs.run_ids }}; do
+            echo "Checking artifacts from run $RUN_ID..."
+            ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts \
+              --jq '.artifacts[] | select(.name | startswith("aria2-${{ env.ARIA2_VERSION }}-"))')
+            if [ -n "$ARTIFACTS" ]; then
+              echo "Found artifacts, downloading..."
+              gh run download $RUN_ID \
+                --dir temp_release \
+                --pattern "aria2-${{ env.ARIA2_VERSION }}-*"
+              mv temp_release/*/* release/
+              rm -rf temp_release
+            else
+              echo "No artifacts found for run $RUN_ID, skipping..."
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                        
+      - name: Check release folder
+        id: check_release_folder
+        run: |
+          ls -Rlh release
+          if [ -n "$(ls -A release)" ]; then
+            echo "Release folder is not empty, proceeding to the next step."
+            echo "is_empty=false" >> $GITHUB_OUTPUT
+          else
+            echo "Release folder is empty, stopping the workflow."
+            echo "is_empty=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete existing release if it exists
+        if: steps.check_release_folder.outputs.is_empty == 'false'
+        run: |
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/v${{ env.ARIA2_VERSION }} \
+            --jq '.id' || true)
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Deleting existing release with tag v${{ env.ARIA2_VERSION }}..."
+            gh api repos/${{ github.repository }}/releases/$RELEASE_ID \
+              --method DELETE
+          else
+            echo "No existing release found with tag v${{ env.ARIA2_VERSION }}."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release and Upload Assets
+        if: steps.check_release_folder.outputs.is_empty == 'false'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.ARIA2_VERSION }}
+          name: Aria2 v${{ env.ARIA2_VERSION }} static
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+          files: |
+            release/*

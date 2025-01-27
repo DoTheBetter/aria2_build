@@ -1,0 +1,80 @@
+name: Build aria2 with AppleTLS for macOS (64-bit)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/mac-aria2.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install \
+            automake autoconf libtool pkg-config \
+            libssh2 zlib sqlite3 c-ares libxml2 \
+            nettle gmp cppunit
+
+      - name: Build and configure aria2
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+          autoreconf -i
+          ./configure --enable-static --disable-shared
+
+      - name: Build aria2
+        run: |
+          cd aria2
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Test aria2
+        run: |
+          cd aria2
+          make check
+          ./src/aria2c --version
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd aria2/src
+          shasum -a 256 aria2c > aria2c.sha256
+          cat aria2c.sha256
+
+      - name: Extract aria2 version
+        id: aria2_version
+        run: |
+          cd aria2
+          ARIA2_VERSION=$(./src/aria2c --version | head -n 1 | awk '{print $3}')
+          echo "ARIA2_VERSION=$ARIA2_VERSION" >> $GITHUB_ENV
+          echo "Extracted ARIA2_VERSION: $ARIA2_VERSION"
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-macos-64bit"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+      
+          cp aria2/src/aria2c "release/$BINARY_NAME"
+          cp aria2/src/aria2c.sha256 "release/$BINARY_NAME.sha256"
+          sed -i '' "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
+                
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: |
+            release/${{ env.BINARY_NAME }}
+            release/${{ env.BINARY_NAME }}.sha256
