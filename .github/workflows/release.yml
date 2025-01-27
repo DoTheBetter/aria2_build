@@ -75,7 +75,9 @@ jobs:
 
       - name: Generate Changelog
         run: |
-          cat << EOF > CHANGELOG.md
+      - name: Generate Changelog
+        run: |
+          cat <<'EOF' > CHANGELOG.md
 魔改 Aria2 ${{ env.ARIA2_VERSION }} 静态编译版本
 
 ## OpenSSL for Linux (64/32-bit)
@@ -102,7 +104,6 @@ jobs:
 - Libraries: zlib/1.2.12 libxml2/2.9.13 sqlite3/3.43.2 AppleTLS c-ares/1.34.4 libssh2/1.11.1
 - Compiler: Apple LLVM 15.0.0 (clang-1500.3.9.4)
   - built by  aarch64-apple-darwin23.6.0
-
 EOF
           
       - name: Create GitHub Release and Upload Assets
