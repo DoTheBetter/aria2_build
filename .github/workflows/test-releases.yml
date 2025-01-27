@@ -1,0 +1,49 @@
+name: Test Releases
+
+on:
+  workflow_dispatch:
+
+env:
+  VERSION: "1.37.0"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        system: [linux-386, linux-amd64, linux-arm64, linux-armv7, macos-64bit, win-32bit, win-64bit]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download release asset
+        id: download-asset
+        run: |
+          ASSET_NAME="aria2-${{ env.VERSION }}-${{ matrix.system }}"
+          if [[ "${{ matrix.system }}" == *"win"* ]]; then
+            ASSET_NAME="$ASSET_NAME.exe"
+          fi
+          ASSET_URL=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r ".assets[] | select(.name == \"$ASSET_NAME\") | .browser_download_url")
+          echo "Downloading $ASSET_URL"
+          curl -L -o $ASSET_NAME $ASSET_URL
+          echo "ASSET_PATH=$ASSET_NAME" >> $GITHUB_ENV
+
+      - name: Verify SHA256 checksum
+        run: |
+          SHA256_FILE="aria2-${{ env.VERSION }}-${{ matrix.system }}.sha256"
+          if [[ "${{ matrix.system }}" == *"win"* ]]; then
+            SHA256_FILE="$SHA256_FILE.exe.sha256"
+          fi
+          SHA256_URL=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r ".assets[] | select(.name == \"$SHA256_FILE\") | .browser_download_url")
+          curl -L -o $SHA256_FILE $SHA256_URL
+          sha256sum -c $SHA256_FILE
+
+      - name: Set up Docker
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
+      - name: Build and run Docker container
+        run: |
+          docker build -t aria2-test-${{ matrix.system }} -f test/Dockerfile.${{ matrix.system }} --build-arg VERSION=${{ env.VERSION }} .
+          docker run --rm aria2-test-${{ matrix.system }}

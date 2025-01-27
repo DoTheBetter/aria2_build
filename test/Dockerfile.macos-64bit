@@ -1,0 +1,9 @@
+FROM alpine:latest
+
+ARG VERSION
+
+COPY aria2-$VERSION-macos-64bit /usr/local/bin/aria2
+
+RUN chmod +x /usr/local/bin/aria2
+
+CMD ["aria2", "--version"]

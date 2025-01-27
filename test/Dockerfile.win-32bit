@@ -1,0 +1,7 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+ARG VERSION
+
+COPY aria2-$VERSION-win-32bit.exe C:\\aria2.exe
+
+CMD ["C:\\aria2.exe", "--version"]
