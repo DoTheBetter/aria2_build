@@ -3,7 +3,7 @@
 ### 魔改 aria 2 编译
 
 + OpenSSL for Linux (64/32-bit)
-+ Schannel for Windows (64/32-bit) 使用upx进行压缩
++ Schannel for Windows (64/32-bit) 参照官方[Dockerfile.mingw](https://github.com/aria2/aria2/blob/master/Dockerfile.mingw)构建，使用upx进行压缩
 + AppleTLS for macOS (64-bit)
 
 ### 修改内容
