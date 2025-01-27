@@ -12,7 +12,7 @@ jobs:
         os: [linux-386, linux-amd64, linux-arm64, linux-armv7]
         include:
           - os: linux-386
-            docker_image: i386/ubuntu  # 修改为 i386/ubuntu 以适配 linux/386 架构
+            docker_image: i386/ubuntu
             docker_platform: linux/386
             command: "./aria2-1.37.0-linux-386 --version"
           - os: linux-amd64
@@ -20,11 +20,11 @@ jobs:
             docker_platform: linux/amd64
             command: "./aria2-1.37.0-linux-amd64 --version"
           - os: linux-arm64
-            docker_image: arm64v8/ubuntu  # 修改为 arm64v8/ubuntu 以适配 linux-arm64 架构
+            docker_image: arm64v8/ubuntu
             docker_platform: linux/arm64/v8
             command: "./aria2-1.37.0-linux-arm64 --version"
           - os: linux-armv7
-            docker_image: arm32v7/ubuntu  # 修改为 arm32v7/ubuntu 以适配 linux-armv7 架构
+            docker_image: arm32v7/ubuntu
             docker_platform: linux/arm/v7
             command: "./aria2-1.37.0-linux-armv7 --version"
     steps:
@@ -51,4 +51,9 @@ jobs:
 
       - name: Run tests in Docker
         run: |
-          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apt-get update && apt-get install -y libxml2; ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; echo \$PATH; /app/aria2-1.37.0-${{ matrix.os }} --version"
+          if [ "${{ matrix.os }}" = "linux-386" ]; then
+            DEPENDENCIES="libxml2 libc6-dev-i386"
+          else
+            DEPENDENCIES="libxml2"
+          fi
+          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apt-get update && apt-get install -y $DEPENDENCIES; ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; ldd /app/aria2-1.37.0-${{ matrix.os }}; echo \$PATH; /app/aria2-1.37.0-${{ matrix.os }} --version"
