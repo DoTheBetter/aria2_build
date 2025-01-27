@@ -42,7 +42,6 @@ jobs:
           curl -s -L -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/octet-stream" $ASSET_URL -o $ASSET_NAME
           chmod +x $ASSET_NAME
           ls -l $ASSET_NAME
-          file $ASSET_NAME
 
       - name: Set up QEMU for multi-architecture support
         uses: docker/setup-qemu-action@v2
@@ -52,4 +51,4 @@ jobs:
 
       - name: Run tests in Docker
         run: |
-          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; file /app/aria2-1.37.0-${{ matrix.os }}; echo \$PATH; /app/aria2-1.37.0-${{ matrix.os }} --version"
+          docker run --rm --platform ${{ matrix.docker_platform }} -v $(pwd):/app -w /app ${{ matrix.docker_image }} sh -c "apt-get update && apt-get install -y libxml2; ls -l /app; chmod +x /app/aria2-1.37.0-${{ matrix.os }}; echo \$PATH; /app/aria2-1.37.0-${{ matrix.os }} --version"
