@@ -19,10 +19,19 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
     strategy:
       matrix:
         arch: [amd64, arm64, 386, armv7]
+        include:
+          - arch: amd64
+            runs-on: ubuntu-22.04-x86_64
+          - arch: arm64
+            runs-on: ubuntu-22.04-arm64
+          - arch: 386
+            runs-on: ubuntu-22.04-i386
+          - arch: armv7
+            runs-on: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -185,8 +194,6 @@ jobs:
           if [ -n "$HOST" ]; then
             ./configure \
               --prefix=/usr/local \
-              --enable-static \
-              --disable-shared \
               --with-openssl \
               --without-gnutls \
               --without-libnettle \
@@ -200,12 +207,10 @@ jobs:
               --with-sqlite3 \
               --with-libssh2 \
               --host=$HOST \
-              LDFLAGS="-static"
+              ARIA2_STATIC=yes
           else
             ./configure \
               --prefix=/usr/local \
-              --enable-static \
-              --disable-shared \
               --with-openssl \
               --without-gnutls \
               --without-libnettle \
@@ -218,11 +223,11 @@ jobs:
               --with-libcares \
               --with-sqlite3 \
               --with-libssh2 \
-              LDFLAGS="-static"
+              ARIA2_STATIC=yes
           fi
           make -j$(nproc)
           strip src/aria2c
-
+      
       - name: Run aria2 tests
         run: |
           cd aria2
