@@ -194,7 +194,7 @@ jobs:
       
           # 设置 CPPFLAGS 和 LDFLAGS
           export CPPFLAGS="-I/usr/local/include"
-          export LDFLAGS="-L/usr/local/lib"
+          export LDFLAGS="-static -lz -lm -lssl -lcrypto -lexpat -lcares -lsqlite3 -lssh2"
       
           if [ -n "$HOST" ]; then
             ./configure \
