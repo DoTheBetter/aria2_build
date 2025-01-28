@@ -53,7 +53,8 @@ jobs:
             zlib1g-dev \
             git \
             wget \
-            autopoint
+            autopoint \
+            libicu-dev  # 添加 ICU 支持
 
       - name: Set up environment for ${{ matrix.arch }}
         run: |
@@ -194,7 +195,7 @@ jobs:
       
           # 设置 CPPFLAGS 和 LDFLAGS
           export CPPFLAGS="-I/usr/local/include"
-          export LDFLAGS="-static -lz -lm -lssl -lcrypto -lexpat -lcares -lsqlite3 -lssh2"
+          export LDFLAGS="-static -L/usr/local/lib -lz -lm -lssl -lcrypto -lexpat -lcares -lsqlite3 -lssh2 -licuuc -licudata"
       
           if [ -n "$HOST" ]; then
             ./configure \
@@ -211,6 +212,7 @@ jobs:
               --with-libcares \
               --with-sqlite3 \
               --with-libssh2 \
+              --with-libicu \
               --host=$HOST \
               ARIA2_STATIC=yes
           else
@@ -228,6 +230,7 @@ jobs:
               --with-libcares \
               --with-sqlite3 \
               --with-libssh2 \
+              --with-libicu \
               ARIA2_STATIC=yes
           fi
           make -j$(nproc)
