@@ -191,6 +191,11 @@ jobs:
             done
           fi
           autoreconf -f -i
+      
+          # 设置 CPPFLAGS 和 LDFLAGS
+          export CPPFLAGS="-I/usr/local/include"
+          export LDFLAGS="-L/usr/local/lib"
+      
           if [ -n "$HOST" ]; then
             ./configure \
               --prefix=/usr/local \
@@ -227,7 +232,7 @@ jobs:
           fi
           make -j$(nproc)
           strip src/aria2c
-      
+                  
       - name: Run aria2 tests
         run: |
           cd aria2
