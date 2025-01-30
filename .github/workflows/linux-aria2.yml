@@ -48,7 +48,8 @@ jobs:
         uses: docker://${{ env.CONTAINER_IMAGE }}
         with:
           entrypoint: /bin/bash
-          args: -c |
+          args: |
+            -c "
             set -e
             apt-get update
             apt-get install -y \
@@ -67,33 +68,33 @@ jobs:
               wget \
               autopoint
 
-            if [ "${{ matrix.arch }}" = "amd64" ]; then
-              export CC="gcc"
-              export CXX="g++"
+            if [ \"${{ matrix.arch }}\" = \"amd64\" ]; then
+              export CC=\"gcc\"
+              export CXX=\"g++\"
               export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
-              export ARCH_SUFFIX="linux-amd64"
-              export HOST="x86_64-linux-gnu"
+              export ARCH_SUFFIX=\"linux-amd64\"
+              export HOST=\"x86_64-linux-gnu\"
               apt-get install -y gcc-multilib
-            elif [ "${{ matrix.arch }}" = "arm64" ]; then
-              export CC="aarch64-linux-gnu-gcc"
-              export CXX="aarch64-linux-gnu-g++"
+            elif [ \"${{ matrix.arch }}\" = \"arm64\" ]; then
+              export CC=\"aarch64-linux-gnu-gcc\"
+              export CXX=\"aarch64-linux-gnu-g++\"
               export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
-              export ARCH_SUFFIX="linux-arm64"
-              export HOST="aarch64-linux-gnu"
+              export ARCH_SUFFIX=\"linux-arm64\"
+              export HOST=\"aarch64-linux-gnu\"
               apt-get install -y gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu
-            elif [ "${{ matrix.arch }}" = "386" ]; then
-              export CC="gcc -m32"
-              export CXX="g++ -m32"
+            elif [ \"${{ matrix.arch }}\" = \"386\" ]; then
+              export CC=\"gcc -m32\"
+              export CXX=\"g++ -m32\"
               export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
-              export ARCH_SUFFIX="linux-386"
-              export HOST="i386-linux-gnu"
+              export ARCH_SUFFIX=\"linux-386\"
+              export HOST=\"i386-linux-gnu\"
               apt-get install -y gcc-multilib
-            elif [ "${{ matrix.arch }}" = "armv7" ]; then
-              export CC="arm-linux-gnueabihf-gcc"
-              export CXX="arm-linux-gnueabihf-g++"
+            elif [ \"${{ matrix.arch }}\" = \"armv7\" ]; then
+              export CC=\"arm-linux-gnueabihf-gcc\"
+              export CXX=\"arm-linux-gnueabihf-g++\"
               export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
-              export ARCH_SUFFIX="linux-armv7"
-              export HOST="arm-linux-gnueabihf"
+              export ARCH_SUFFIX=\"linux-armv7\"
+              export HOST=\"arm-linux-gnueabihf\"
               apt-get install -y gcc-11-arm-linux-gnueabihf g++-11-arm-linux-gnueabihf
             fi
 
@@ -101,7 +102,7 @@ jobs:
             wget http://dev-www.libreoffice.org/src/cppunit-$CPPUNIT_VERSION.tar.gz
             tar xzf cppunit-$CPPUNIT_VERSION.tar.gz
             cd cppunit-$CPPUNIT_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
             else
               ./configure --prefix=/usr/local --disable-shared --enable-static
@@ -113,7 +114,7 @@ jobs:
             wget https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz
             tar xzf openssl-$OPENSSL_VERSION.tar.gz
             cd openssl-$OPENSSL_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./Configure --prefix=/usr/local --openssldir=/usr/local/ssl $HOST no-shared
             else
               ./config --prefix=/usr/local --openssldir=/usr/local/ssl no-shared
@@ -125,7 +126,7 @@ jobs:
             wget https://github.com/c-ares/c-ares/releases/download/v$CARES_VERSION/c-ares-$CARES_VERSION.tar.gz
             tar xzf c-ares-$CARES_VERSION.tar.gz
             cd c-ares-$CARES_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
             else
               ./configure --prefix=/usr/local --disable-shared --enable-static
@@ -135,11 +136,11 @@ jobs:
 
             # Build and install expat
             EXPAT_VERSION_UNDERSCORE=$(echo $EXPAT_VERSION | sed 's/\./_/g')
-            EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
+            EXPAT_VERSION_UNDERSCORE=\"R_${EXPAT_VERSION_UNDERSCORE}\"
             wget https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-$EXPAT_VERSION.tar.gz
             tar xzf expat-$EXPAT_VERSION.tar.gz
             cd expat-$EXPAT_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
             else
               ./configure --prefix=/usr/local --disable-shared --enable-static
@@ -151,7 +152,7 @@ jobs:
             wget https://zlib.net/zlib-$ZLIB_VERSION.tar.gz
             tar xzf zlib-$ZLIB_VERSION.tar.gz
             cd zlib-$ZLIB_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure --prefix=/usr/local --host=$HOST --static
             else
               ./configure --prefix=/usr/local --static
@@ -163,7 +164,7 @@ jobs:
             wget https://www.sqlite.org/2025/sqlite-autoconf-$SQLITE_VERSION.tar.gz
             tar xzf sqlite-autoconf-$SQLITE_VERSION.tar.gz
             cd sqlite-autoconf-$SQLITE_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure --prefix=/usr/local --host=$HOST --disable-shared --enable-static
             else
               ./configure --prefix=/usr/local --disable-shared --enable-static
@@ -175,7 +176,7 @@ jobs:
             wget https://libssh2.org/download/libssh2-$LIBSSH2_VERSION.tar.gz
             tar xzf libssh2-$LIBSSH2_VERSION.tar.gz
             cd libssh2-$LIBSSH2_VERSION
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure --prefix=/usr/local --with-openssl --host=$HOST --disable-shared --enable-static
             else
               ./configure --prefix=/usr/local --with-openssl --disable-shared --enable-static
@@ -186,13 +187,13 @@ jobs:
             # Build and install aria2 (static)
             git clone https://github.com/aria2/aria2.git
             cd aria2
-            if [ -d "/github/workspace/patch" ]; then
+            if [ -d \"/github/workspace/patch\" ]; then
               for patch_file in /github/workspace/patch/*.patch; do
-                patch -p1 < "$patch_file" || exit 1
+                patch -p1 < \"$patch_file\" || exit 1
               done
             fi
             autoreconf -f -i
-            if [ -n "$HOST" ]; then
+            if [ -n \"$HOST\" ]; then
               ./configure \
                 --prefix=/usr/local \
                 --enable-static \
@@ -210,7 +211,7 @@ jobs:
                 --with-sqlite3 \
                 --with-libssh2 \
                 --host=$HOST \
-                LDFLAGS="-static -static-libgcc -static-libstdc++"
+                LDFLAGS=\"-static -static-libgcc -static-libstdc++\"
             else
               ./configure \
                 --prefix=/usr/local \
@@ -228,7 +229,7 @@ jobs:
                 --with-libcares \
                 --with-sqlite3 \
                 --with-libssh2 \
-                LDFLAGS="-static -static-libgcc -static-libstdc++"
+                LDFLAGS=\"-static -static-libgcc -static-libstdc++\"
             fi
             make -j$(nproc)
             strip src/aria2c
@@ -243,17 +244,18 @@ jobs:
             cat aria2c.sha256
 
             # Get aria2 version
-            ARIA2_VERSION=$(grep 'PACKAGE_VERSION=' configure | cut -d"'" -f2)
-            echo "ARIA2_VERSION=${ARIA2_VERSION}" >> $GITHUB_ENV
+            ARIA2_VERSION=$(grep 'PACKAGE_VERSION=' configure | cut -d\"'\" -f2)
+            echo \"ARIA2_VERSION=${ARIA2_VERSION}\" >> $GITHUB_ENV
 
             # Package aria2 binary
             mkdir -p /github/workspace/release
-            BINARY_NAME="aria2-$ARIA2_VERSION-$ARCH_SUFFIX"
-            echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+            BINARY_NAME=\"aria2-$ARIA2_VERSION-$ARCH_SUFFIX\"
+            echo \"BINARY_NAME=$BINARY_NAME\" >> $GITHUB_ENV
 
-            cp aria2c "/github/workspace/release/$BINARY_NAME"
-            cp aria2c.sha256 "/github/workspace/release/$BINARY_NAME.sha256"
-            sed -i "s/aria2c/$BINARY_NAME/" "/github/workspace/release/$BINARY_NAME.sha256"
+            cp aria2c \"/github/workspace/release/$BINARY_NAME\"
+            cp aria2c.sha256 \"/github/workspace/release/$BINARY_NAME.sha256\"
+            sed -i \"s/aria2c/$BINARY_NAME/\" \"/github/workspace/release/$BINARY_NAME.sha256\"
+            "
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
