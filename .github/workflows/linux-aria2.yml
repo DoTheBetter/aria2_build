@@ -32,24 +32,22 @@ jobs:
         run: |
           if [ "${{ matrix.arch }}" = "amd64" ]; then
             echo "Using amd64 Docker image"
-            echo "CONTAINER_IMAGE=ubuntu:22.04" >> $GITHUB_ENV
+            CONTAINER_IMAGE="ubuntu:22.04"
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             echo "Using arm64 Docker image"
-            echo "CONTAINER_IMAGE=arm64v8/ubuntu:22.04" >> $GITHUB_ENV
+            CONTAINER_IMAGE="arm64v8/ubuntu:22.04"
           elif [ "${{ matrix.arch }}" = "386" ]; then
             echo "Using i386 Docker image"
-            echo "CONTAINER_IMAGE=i386/ubuntu:22.04" >> $GITHUB_ENV
+            CONTAINER_IMAGE="i386/ubuntu:22.04"
           elif [ "${{ matrix.arch }}" = "armv7" ]; then
             echo "Using armv7 Docker image"
-            echo "CONTAINER_IMAGE=arm32v7/ubuntu:22.04" >> $GITHUB_ENV
+            CONTAINER_IMAGE="arm32v7/ubuntu:22.04"
           fi
+          echo "CONTAINER_IMAGE=${CONTAINER_IMAGE}" >> $GITHUB_ENV
 
       - name: Run build steps in Docker container
-        uses: docker://${{ env.CONTAINER_IMAGE }}
-        with:
-          entrypoint: /bin/bash
-          args: |
-            -c "
+        run: |
+          docker run --rm -v $(pwd):/workspace -w /workspace ${{ env.CONTAINER_IMAGE }} /bin/bash -c "
             set -e
             apt-get update
             apt-get install -y \
@@ -187,8 +185,8 @@ jobs:
             # Build and install aria2 (static)
             git clone https://github.com/aria2/aria2.git
             cd aria2
-            if [ -d \"/github/workspace/patch\" ]; then
-              for patch_file in /github/workspace/patch/*.patch; do
+            if [ -d \"/workspace/patch\" ]; then
+              for patch_file in /workspace/patch/*.patch; do
                 patch -p1 < \"$patch_file\" || exit 1
               done
             fi
@@ -248,14 +246,14 @@ jobs:
             echo \"ARIA2_VERSION=${ARIA2_VERSION}\" >> $GITHUB_ENV
 
             # Package aria2 binary
-            mkdir -p /github/workspace/release
+            mkdir -p /workspace/release
             BINARY_NAME=\"aria2-$ARIA2_VERSION-$ARCH_SUFFIX\"
             echo \"BINARY_NAME=$BINARY_NAME\" >> $GITHUB_ENV
 
-            cp aria2c \"/github/workspace/release/$BINARY_NAME\"
-            cp aria2c.sha256 \"/github/workspace/release/$BINARY_NAME.sha256\"
-            sed -i \"s/aria2c/$BINARY_NAME/\" \"/github/workspace/release/$BINARY_NAME.sha256\"
-            "
+            cp aria2c \"/workspace/release/$BINARY_NAME\"
+            cp aria2c.sha256 \"/workspace/release/$BINARY_NAME.sha256\"
+            sed -i \"s/aria2c/$BINARY_NAME/\" \"/workspace/release/$BINARY_NAME.sha256\"
+          "
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
