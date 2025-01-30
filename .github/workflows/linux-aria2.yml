@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm64' || matrix.arch == 'armv7' && 'ubuntu-22.04-arm64' || 'ubuntu-22.04' }}
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         arch: [amd64, arm64, 386, armv7]
@@ -200,7 +200,7 @@ jobs:
               --with-sqlite3 \
               --with-libssh2 \
               --host=$HOST \
-              LDFLAGS="-static"
+              LDFLAGS="-static -static-libgcc -static-libstdc++"
           else
             ./configure \
               --prefix=/usr/local \
@@ -218,7 +218,7 @@ jobs:
               --with-libcares \
               --with-sqlite3 \
               --with-libssh2 \
-              LDFLAGS="-static"
+              LDFLAGS="-static -static-libgcc -static-libstdc++"
           fi
           make -j$(nproc)
           strip src/aria2c
