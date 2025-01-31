@@ -63,7 +63,7 @@ jobs:
           ls -l $PWD/mingw-out
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: aria2c-binaries
           path: ${{ github.workspace }}/mingw-out
