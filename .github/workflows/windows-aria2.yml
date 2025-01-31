@@ -33,7 +33,7 @@ jobs:
             make binutils autoconf automake autotools-dev libtool \
             patch ca-certificates \
             pkg-config git curl dpkg-dev gcc-mingw-w64 g++-mingw-w64 \
-            autopoint libxml2-dev libgcrypt20-dev lzip \
+            autopoint libxml2-dev libgcrypt20-dev libicu-dev lzip \
             python3-docutils \
             mingw-w64-tools mingw-w64-common \
             mingw-w64-i686-dev mingw-w64-x86-64-dev \
@@ -185,7 +185,7 @@ jobs:
             --with-cppunit-prefix=$PREFIX \
             ARIA2_STATIC=yes \
             CPPFLAGS="-I$PREFIX/include -I/usr/$HOST/include" \
-            LDFLAGS="-L$PREFIX/lib -L/usr/$HOST/lib -static -static-libgcc -static-libstdc++" \
+            LDFLAGS="-L$PREFIX/lib -static -static-libgcc -static-libstdc++" \
             PKG_CONFIG="/usr/bin/pkg-config"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
