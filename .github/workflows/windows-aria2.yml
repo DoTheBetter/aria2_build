@@ -161,14 +161,32 @@ jobs:
             done
           fi
           autoreconf -i
-          export PKG_CONFIG_PATH=/usr/local/${{ matrix.host }}/lib/pkgconfig:$PKG_CONFIG_PATH
+          HOST=${{ matrix.host }}
+          PREFIX=/usr/local/${{ matrix.host }}
+          export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
           ./configure \
-            --host=${{ matrix.host }} \
-            --prefix=/usr/local/${{ matrix.host }} \
+            --host=$HOST \
+            --prefix=$PREFIX \
             --enable-static \
             --disable-shared \
-            CPPFLAGS="-I/usr/local/${{ matrix.host }}/include -I/usr/${{ matrix.host }}/include" \
-            LDFLAGS="-L/usr/local/${{ matrix.host }}/lib -L/usr/${{ matrix.host }}/lib -static -static-libgcc -static-libstdc++"
+            --without-included-gettext \
+            --disable-nls \
+            --with-libcares \
+            --without-gnutls \
+            --without-openssl \
+            --with-sqlite3 \
+            --without-libxml2 \
+            --with-libexpat \
+            --with-libz \
+            --with-libgmp \
+            --with-libssh2 \
+            --without-libgcrypt \
+            --without-libnettle \
+            --with-cppunit-prefix=$PREFIX \
+            ARIA2_STATIC=yes \
+            CPPFLAGS="-I$PREFIX/include -I/usr/$HOST/include" \
+            LDFLAGS="-L$PREFIX/lib -L/usr/$HOST/lib -static -static-libgcc -static-libstdc++" \
+            PKG_CONFIG="/usr/bin/pkg-config"
           make -j$(nproc)
           ${{ matrix.host }}-strip src/aria2c.exe
 
