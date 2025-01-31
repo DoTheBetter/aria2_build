@@ -45,7 +45,7 @@ jobs:
               --build-arg ZLIB_VERSION=${{ env.ZLIB_VERSION }} \
               --build-arg CARES_VERSION=${{ env.CARES_VERSION }} \
               --build-arg LIBSSH2_VERSION=${{ env.LIBSSH2_VERSION }} \
-              -t aria2-mingw-$HOST - < Dockerfile/Dockerfile.mingw.txt
+              -t aria2-mingw-$HOST -f Dockerfile/Dockerfile.mingw.txt .
 
             docker run --rm -it -v $PWD/mingw-out:/out aria2-mingw-$HOST \
               sh -c "cp /aria2/src/aria2c.exe /out/aria2c-${{ env.ARIA2_VERSION }}-$LABEL.exe"
