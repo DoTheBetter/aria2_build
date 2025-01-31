@@ -42,7 +42,7 @@ RUN curl -L -O https://ftpmirror.gnu.org/gmp/gmp-${GMP_VERSION}.tar.xz && \
     curl -L -O https://github.com/libexpat/libexpat/releases/download/R_${EXPAT_VERSION//./_}/expat-${EXPAT_VERSION}.tar.bz2 && \
     curl -L -O https://www.sqlite.org/${SQLITE_YEAR}/sqlite-autoconf-${SQLITE_VERSION}.tar.gz && \
     curl -L -O https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz && \
-    curl -L -O https://github.com/c-ares/c-ares/releases/download/cares-${CARES_VERSION//./_}/c-ares-${CARES_VERSION}.tar.gz && \
+    curl -L -O https://github.com/c-ares/c-ares/releases/download/v${CARES_VERSION}/c-ares-${CARES_VERSION}.tar.gz && \
     curl -L -O https://libssh2.org/download/libssh2-${LIBSSH2_VERSION}.tar.bz2
 
 RUN tar xf gmp-${GMP_VERSION}.tar.xz && \

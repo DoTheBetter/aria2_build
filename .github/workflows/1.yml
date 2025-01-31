@@ -23,6 +23,7 @@ jobs:
       - name: Get latest aria2c version
         run: |
           VERSION=$(git ls-remote --tags https://github.com/aria2/aria2.git | awk -F/ '{print $3}' | grep -v {} | sort -V | tail -n1)
+          echo "VERSION: $VERSION"
           echo "ARIA2_VERSION=$VERSION" >> $GITHUB_ENV
           echo "aria2 version: ${ARIA2_VERSION}"
 
