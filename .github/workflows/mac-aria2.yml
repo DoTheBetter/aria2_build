@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "CC=cc" >> $GITHUB_ENV
           echo "CXX=c++ -stdlib=libc++" >> $GITHUB_ENV
-          echo "PLATFORMFLAGS=-mmacosx-version-min=10.10 -arch x86_64" >> $GITHUB_ENV
+          echo "PLATFORMFLAGS=-mmacosx-version-min=10.10" >> $GITHUB_ENV
           echo "OPTFLAGS=-Os" >> $GITHUB_ENV
           echo "CFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
           echo "CXXFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
