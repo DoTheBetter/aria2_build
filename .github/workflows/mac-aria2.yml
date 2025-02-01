@@ -123,10 +123,10 @@ jobs:
       - name: Build and install libssh2
         run: |
           cd libssh2-${{ env.LIBSSH2_VERSION }}
-          ./configure --with-pic --without-openssl --with-libgcrypt=$(PWD)/arch --with-libgcrypt-prefix=$(PWD)/arch --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" CXXFLAGS="$CXXFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          ./configure --with-pic --without-openssl --with-libgcrypt=$(PWD)/arch --with-libgcrypt-prefix=$(PWD)/arch --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS -I$(PWD)/arch/include" CXXFLAGS="$CXXFLAGS $LTO_FLAGS -I$(PWD)/arch/include" LDFLAGS="$LDFLAGS -L$(PWD)/arch/lib"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
-
+      
       - name: Build and install cppunit
         run: |
           cd cppunit-${{ env.CPPUNIT_VERSION }}
