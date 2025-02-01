@@ -41,12 +41,12 @@ jobs:
           echo "INSTALL_PREFIX=$GITHUB_WORKSPACE/arch" >> $GITHUB_ENV
 
           # 打印环境变量以验证
-          echo "PLATFORMFLAGS: $PLATFORMFLAGS"
-          echo "OPTFLAGS: $OPTFLAGS"
-          echo "CFLAGS: $CFLAGS"
-          echo "CXXFLAGS: $CXXFLAGS"
-          echo "LDFLAGS: $LDFLAGS"
-          echo "INSTALL_PREFIX: $INSTALL_PREFIX"
+          echo "PLATFORMFLAGS: $PLATFORMFLAGS" >&2
+          echo "OPTFLAGS: $OPTFLAGS" >&2
+          echo "CFLAGS: $CFLAGS" >&2
+          echo "CXXFLAGS: $CXXFLAGS" >&2
+          echo "LDFLAGS: $LDFLAGS" >&2
+          echo "INSTALL_PREFIX: $INSTALL_PREFIX" >&2
     
       - name: Download and extract dependencies
         run: |
@@ -136,6 +136,10 @@ jobs:
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
+      - name: Install Autotools
+        run: |
+          brew install autoconf automake libtool
+
       - name: Build and configure aria2
         run: |
           git clone https://github.com/aria2/aria2.git
@@ -168,7 +172,6 @@ jobs:
             CFLAGS="$CFLAGS $LTO_FLAGS" \
             CXXFLAGS="$CXXFLAGS $LTO_FLAGS" \
             LDFLAGS="$LDFLAGS"
-
           make -j$(sysctl -n hw.ncpu)
 
       - name: Test aria2
