@@ -37,9 +37,11 @@ jobs:
           ./configure \
             --enable-static \
             --disable-shared \
+            --enable-metalink \
+            --enable-bittorrent \
             --disable-nls \
             --with-appletls \
-            --with-libgmp \
+            --with-libgmp=$(brew --prefix gmp) \
             --with-sqlite3 \
             --with-libz \
             --with-libexpat \
