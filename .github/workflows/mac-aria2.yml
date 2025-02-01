@@ -35,8 +35,8 @@ jobs:
           echo "CXX=c++ -stdlib=libc++" >> $GITHUB_ENV
           echo "PLATFORMFLAGS=-mmacosx-version-min=10.10" >> $GITHUB_ENV
           echo "OPTFLAGS=-Os" >> $GITHUB_ENV
-          echo "CFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
-          echo "CXXFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
+          echo "CFLAGS=-mmacosx-version-min=10.10 -Os" >> $GITHUB_ENV
+          echo "CXXFLAGS=-mmacosx-version-min=10.10 -Os" >> $GITHUB_ENV
           echo "LDFLAGS=-Wl,-dead_strip" >> $GITHUB_ENV
           echo "LTO_FLAGS=-flto -ffunction-sections -fdata-sections" >> $GITHUB_ENV
           echo "INSTALL_PREFIX=$GITHUB_WORKSPACE/arch" >> $GITHUB_ENV
@@ -149,6 +149,7 @@ jobs:
             --disable-nls \
             --with-appletls \
             --with-libgmp \
+            --with-libgmp-prefix=${{ env.INSTALL_PREFIX }} \
             --with-sqlite3 \
             --with-libz \
             --with-libexpat \
