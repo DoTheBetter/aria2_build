@@ -8,21 +8,21 @@ on:
       - '.github/workflows/mac-aria2.yml'
   workflow_dispatch:
 
+env:
+  ZLIB_VERSION: 1.3.1
+  EXPAT_VERSION: 2.6.4
+  CARES_VERSION: 1.34.4
+  SQLITE_YEAR: 2025
+  SQLITE_VERSION: 3480000
+  GMP_VERSION: 6.3.0
+  LIBGPGERROR_VERSION: 1.51
+  LIBGCRYPT_VERSION: 1.11.0
+  LIBSSH2_VERSION: 1.11.1
+  CPPUNIT_VERSION: 1.12.1
+
 jobs:
   build:
     runs-on: macos-latest
-
-    env:
-      ZLIB_VERSION: 1.3.1
-      EXPAT_VERSION: 2.6.4
-      CARES_VERSION: 1.34.4
-      SQLITE_YEAR: 2025
-      SQLITE_VERSION: 3480000
-      GMP_VERSION: 6.3.0
-      LIBGPGERROR_VERSION: 1.51
-      LIBGCRYPT_VERSION: 1.11.0
-      LIBSSH2_VERSION: 1.11.1
-      CPPUNIT_VERSION: 1.12.1
 
     steps:
       - name: Checkout repository
@@ -38,7 +38,16 @@ jobs:
           echo "CXXFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
           echo "LDFLAGS=-Wl,-dead_strip" >> $GITHUB_ENV
           echo "LTO_FLAGS=-flto -ffunction-sections -fdata-sections" >> $GITHUB_ENV
+          echo "INSTALL_PREFIX=$GITHUB_WORKSPACE/arch" >> $GITHUB_ENV
 
+          # 打印环境变量以验证
+          echo "PLATFORMFLAGS: $PLATFORMFLAGS"
+          echo "OPTFLAGS: $OPTFLAGS"
+          echo "CFLAGS: $CFLAGS"
+          echo "CXXFLAGS: $CXXFLAGS"
+          echo "LDFLAGS: $LDFLAGS"
+          echo "INSTALL_PREFIX: $INSTALL_PREFIX"
+    
       - name: Download and extract dependencies
         run: |
           # 动态生成 EXPAT_RELEASE_TAG
@@ -74,68 +83,56 @@ jobs:
       - name: Build and install zlib
         run: |
           cd zlib-${{ env.ZLIB_VERSION }}
-          ./configure --static --prefix=$(PWD)/arch
+          ./configure --static --prefix=${{ env.INSTALL_PREFIX }}
           make -j$(sysctl -n hw.ncpu) CFLAGS="$CFLAGS $LTO_FLAGS"
           sudo make install
 
       - name: Build and install expat
         run: |
           cd expat-${{ env.EXPAT_VERSION }}
-          ./configure --enable-static --disable-shared --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          ./configure --enable-static --disable-shared --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
       - name: Build and install c-ares
         run: |
           cd c-ares-${{ env.CARES_VERSION }}
-          ./configure --enable-static --disable-shared --enable-optimize="$OPTFLAGS" --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          ./configure --enable-static --disable-shared --enable-optimize="$OPTFLAGS" --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
       - name: Build and install sqlite
         run: |
           cd sqlite-autoconf-${{ env.SQLITE_VERSION }}
-          ./configure --enable-static --disable-shared --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          ./configure --enable-static --disable-shared --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
       - name: Build and install GMP
         run: |
           cd gmp-${{ env.GMP_VERSION }}
-          ./configure --disable-cxx --enable-assembly --with-pic --enable-fat --prefix=$(PWD)/arch CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
+          ./configure --disable-cxx --enable-assembly --with-pic --enable-fat --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
       - name: Build and install libgpg-error
         run: |
           cd libgpg-error-${{ env.LIBGPGERROR_VERSION }}
-          ./configure --with-pic --disable-languages --disable-doc --disable-nls --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          ./configure --with-pic --disable-languages --disable-doc --disable-nls --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
       - name: Build and install libgcrypt
         run: |
           cd libgcrypt-${{ env.LIBGCRYPT_VERSION }}
-          ./configure --with-gpg-error-prefix=$(PWD)/arch --disable-O-flag-munging --disable-asm --disable-amd64-as-feature-detection --prefix=$(PWD)/arch CFLAGS="$PLATFORMFLAGS" CXXFLAGS="$PLATFORMFLAGS"
+          ./configure --with-gpg-error-prefix=${{ env.INSTALL_PREFIX }} --disable-O-flag-munging --disable-asm --disable-amd64-as-feature-detection --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$PLATFORMFLAGS" CXXFLAGS="$PLATFORMFLAGS"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
       - name: Build and install libssh2
         run: |
-          echo "CFLAGS: $CFLAGS"
-          echo "CXXFLAGS: $CXXFLAGS"
-          echo "LDFLAGS: $LDFLAGS"
-          ls $(PWD)/arch/lib
-          ls $(PWD)/arch/include
           cd libssh2-${{ env.LIBSSH2_VERSION }}
-          ./configure --with-pic --without-openssl --with-libgcrypt=$(PWD)/arch --with-libgcrypt-prefix=$(PWD)/arch --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS -I$(PWD)/arch/include" CXXFLAGS="$CXXFLAGS $LTO_FLAGS -I$(PWD)/arch/include" LDFLAGS="$LDFLAGS -L$(PWD)/arch/lib"
-          make -j$(sysctl -n hw.ncpu)
-          sudo make install
-      
-      - name: Build and install cppunit
-        run: |
-          cd cppunit-${{ env.CPPUNIT_VERSION }}
-          ./configure --enable-static --disable-shared --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" CXXFLAGS="$CXXFLAGS $LTO_FLAGS"
+          ./configure --with-pic --without-openssl --with-libgcrypt=${{ env.INSTALL_PREFIX }} --with-libgcrypt-prefix=${{ env.INSTALL_PREFIX }} --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS $LTO_FLAGS -I${{ env.INSTALL_PREFIX }}/include" CXXFLAGS="$CXXFLAGS $LTO_FLAGS -I${{ env.INSTALL_PREFIX }}/include" LDFLAGS="$LDFLAGS -L${{ env.INSTALL_PREFIX }}/lib"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
@@ -167,7 +164,7 @@ jobs:
             --without-libnettle \
             --without-libxml2 \
             ARIA2_STATIC=yes \
-            --prefix=$(PWD)/arch \
+            --prefix=${{ env.INSTALL_PREFIX }} \
             CFLAGS="$CFLAGS $LTO_FLAGS" \
             CXXFLAGS="$CXXFLAGS $LTO_FLAGS" \
             LDFLAGS="$LDFLAGS"
