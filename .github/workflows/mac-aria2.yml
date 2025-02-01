@@ -133,6 +133,15 @@ jobs:
           make -j$(sysctl -n hw.ncpu)
           sudo make install
 
+      - name: Verify libgmp paths
+        run: |
+          echo "INSTALL_PREFIX: ${{ env.INSTALL_PREFIX }}"
+          echo "CFLAGS: $CFLAGS"
+          echo "CXXFLAGS: $CXXFLAGS"
+          echo "LDFLAGS: $LDFLAGS"
+          ls ${{ env.INSTALL_PREFIX }}/lib | grep gmp
+          ls ${{ env.INSTALL_PREFIX }}/include | grep gmp
+
       - name: Build and configure aria2
         run: |
           git clone https://github.com/aria2/aria2.git
@@ -149,7 +158,7 @@ jobs:
             --disable-nls \
             --with-appletls \
             --with-libgmp \
-            --with-libgmp-prefix=${{ env.INSTALL_PREFIX }} \
+            --with-libgmp-prefix=${{ env.INSTALL_PREFIX }} \  # 指定 libgmp 的安装路径
             --with-sqlite3 \
             --with-libz \
             --with-libexpat \
@@ -163,9 +172,9 @@ jobs:
             --without-libxml2 \
             ARIA2_STATIC=yes \
             --prefix=${{ env.INSTALL_PREFIX }} \
-            CFLAGS="$CFLAGS $LTO_FLAGS" \
-            CXXFLAGS="$CXXFLAGS $LTO_FLAGS" \
-            LDFLAGS="$LDFLAGS"
+            CFLAGS="$CFLAGS -I${{ env.INSTALL_PREFIX }}/include $LTO_FLAGS" \  # 添加 include 路径
+            CXXFLAGS="$CXXFLAGS -I${{ env.INSTALL_PREFIX }}/include $LTO_FLAGS" \  # 添加 include 路径
+            LDFLAGS="$LDFLAGS -L${{ env.INSTALL_PREFIX }}/lib"  # 添加 lib 路径
           make -j$(sysctl -n hw.ncpu)
 
       - name: Test aria2
