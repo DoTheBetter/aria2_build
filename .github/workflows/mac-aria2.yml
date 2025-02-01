@@ -1,0 +1,208 @@
+name: Build aria2 with AppleTLS for macOS (64-bit)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/mac-aria2.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    env:
+      ZLIB_VERSION: 1.3.1
+      EXPAT_VERSION: 2.6.4
+      CARES_VERSION: 1.34.4
+      SQLITE_YEAR: 2025
+      SQLITE_VERSION: 3480000
+      GMP_VERSION: 6.3.0
+      LIBGPGERROR_VERSION: 1.51
+      LIBGCRYPT_VERSION: 1.11.0
+      LIBSSH2_VERSION: 1.11.1
+      CPPUNIT_VERSION: 1.12.1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up environment variables
+        run: |
+          echo "CC=cc" >> $GITHUB_ENV
+          echo "CXX=c++ -stdlib=libc++" >> $GITHUB_ENV
+          echo "PLATFORMFLAGS=-mmacosx-version-min=10.10 -arch x86_64" >> $GITHUB_ENV
+          echo "OPTFLAGS=-Os" >> $GITHUB_ENV
+          echo "CFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
+          echo "CXXFLAGS=$PLATFORMFLAGS $OPTFLAGS" >> $GITHUB_ENV
+          echo "LDFLAGS=-Wl,-dead_strip" >> $GITHUB_ENV
+          echo "LTO_FLAGS=-flto -ffunction-sections -fdata-sections" >> $GITHUB_ENV
+
+      - name: Download and extract dependencies
+        run: |
+          # 动态生成 EXPAT_RELEASE_TAG
+          EXPAT_RELEASE_TAG=$(echo "${{ env.EXPAT_VERSION }}" | sed 's/\./_/g' | awk '{print "R_" $0}')
+
+          curl -L http://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz -o zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          tar -xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
+
+          curl -L https://github.com/libexpat/libexpat/releases/download/$EXPAT_RELEASE_TAG/expat-${{ env.EXPAT_VERSION }}.tar.gz -o expat-${{ env.EXPAT_VERSION }}.tar.gz
+          tar -xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
+
+          curl -L https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz -o c-ares-${{ env.CARES_VERSION }}.tar.gz
+          tar -xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
+
+          curl -L https://sqlite.org/${{ env.SQLITE_YEAR }}/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz -o sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          tar -xzf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+
+          curl -L https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.gz -o gmp-${{ env.GMP_VERSION }}.tar.gz
+          tar -xzf gmp-${{ env.GMP_VERSION }}.tar.gz
+
+          curl -L https://gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-${{ env.LIBGPGERROR_VERSION }}.tar.gz -o libgpg-error-${{ env.LIBGPGERROR_VERSION }}.tar.gz
+          tar -xzf libgpg-error-${{ env.LIBGPGERROR_VERSION }}.tar.gz
+
+          curl -L https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-${{ env.LIBGCRYPT_VERSION }}.tar.gz -o libgcrypt-${{ env.LIBGCRYPT_VERSION }}.tar.gz
+          tar -xzf libgcrypt-${{ env.LIBGCRYPT_VERSION }}.tar.gz
+
+          curl -L https://libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+          tar -xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+
+          curl -L https://sourceforge.net/projects/cppunit/files/cppunit/${{ env.CPPUNIT_VERSION }}/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz -o cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
+          tar -xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
+
+      - name: Build and install zlib
+        run: |
+          cd zlib-${{ env.ZLIB_VERSION }}
+          ./configure --static --prefix=$(PWD)/arch
+          make -j$(sysctl -n hw.ncpu) CFLAGS="$CFLAGS $LTO_FLAGS"
+          sudo make install
+
+      - name: Build and install expat
+        run: |
+          cd expat-${{ env.EXPAT_VERSION }}
+          ./configure --enable-static --disable-shared --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install c-ares
+        run: |
+          cd c-ares-${{ env.CARES_VERSION }}
+          ./configure --enable-static --disable-shared --enable-optimize="$OPTFLAGS" --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install sqlite
+        run: |
+          cd sqlite-autoconf-${{ env.SQLITE_VERSION }}
+          ./configure --enable-static --disable-shared --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install GMP
+        run: |
+          cd gmp-${{ env.GMP_VERSION }}
+          ./configure --disable-cxx --enable-assembly --with-pic --enable-fat --prefix=$(PWD)/arch CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install libgpg-error
+        run: |
+          cd libgpg-error-${{ env.LIBGPGERROR_VERSION }}
+          ./configure --with-pic --disable-languages --disable-doc --disable-nls --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install libgcrypt
+        run: |
+          cd libgcrypt-${{ env.LIBGCRYPT_VERSION }}
+          ./configure --with-gpg-error-prefix=$(PWD)/arch --disable-O-flag-munging --disable-asm --disable-amd64-as-feature-detection --prefix=$(PWD)/arch CFLAGS="$PLATFORMFLAGS" CXXFLAGS="$PLATFORMFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install libssh2
+        run: |
+          cd libssh2-${{ env.LIBSSH2_VERSION }}
+          ./configure --with-pic --without-openssl --with-libgcrypt=$(PWD)/arch --with-libgcrypt-prefix=$(PWD)/arch --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" CXXFLAGS="$CXXFLAGS $LTO_FLAGS" LDFLAGS="$LDFLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and install cppunit
+        run: |
+          cd cppunit-${{ env.CPPUNIT_VERSION }}
+          ./configure --enable-static --disable-shared --prefix=$(PWD)/arch CFLAGS="$CFLAGS $LTO_FLAGS" CXXFLAGS="$CXXFLAGS $LTO_FLAGS"
+          make -j$(sysctl -n hw.ncpu)
+          sudo make install
+
+      - name: Build and configure aria2
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+          autoreconf -i
+          ./configure \
+            --enable-static \
+            --disable-shared \
+            --disable-nls \
+            --with-appletls \
+            --with-libgmp \
+            --with-sqlite3 \
+            --with-libz \
+            --with-libexpat \
+            --with-libcares \
+            --with-libgcrypt \
+            --with-libssh2 \
+            --without-libuv \
+            --without-gnutls \
+            --without-openssl \
+            --without-libnettle \
+            --without-libxml2 \
+            ARIA2_STATIC=yes \
+            --prefix=$(PWD)/arch \
+            CFLAGS="$CFLAGS $LTO_FLAGS" \
+            CXXFLAGS="$CXXFLAGS $LTO_FLAGS" \
+            LDFLAGS="$LDFLAGS"
+
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Test aria2
+        run: |
+          cd aria2
+          make check
+          ./src/aria2c --version
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd aria2/src
+          shasum -a 256 aria2c > aria2c.sha256
+          cat aria2c.sha256
+
+      - name: Extract aria2 version
+        id: aria2_version
+        run: |
+          cd aria2
+          ARIA2_VERSION=$(./src/aria2c --version | head -n 1 | awk '{print $3}')
+          echo "ARIA2_VERSION=$ARIA2_VERSION" >> $GITHUB_ENV
+          echo "Extracted ARIA2_VERSION: $ARIA2_VERSION"
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-macos-64bit"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+      
+          cp aria2/src/aria2c "release/$BINARY_NAME"
+          cp aria2/src/aria2c.sha256 "release/$BINARY_NAME.sha256"
+          sed -i '' "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
+                
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: |
+            release/${{ env.BINARY_NAME }}
+            release/${{ env.BINARY_NAME }}.sha256
