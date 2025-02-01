@@ -144,6 +144,17 @@ jobs:
 
       - name: Build and configure aria2
         run: |
+          # 获取系统架构
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ]; then
+            BUILD_SYSTEM="x86_64-apple-darwin"
+          elif [ "$ARCH" = "arm64" ]; then
+            BUILD_SYSTEM="arm64-apple-darwin"
+          else
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+          fi
+      
           git clone https://github.com/aria2/aria2.git
           cd aria2
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
@@ -153,12 +164,15 @@ jobs:
           fi
           autoreconf -i
           ./configure \
+            --build=$BUILD_SYSTEM \  # 动态设置 build 系统类型
+            --host=$BUILD_SYSTEM \   # 动态设置 host 系统类型
+            --target=$BUILD_SYSTEM \ # 动态设置 target 系统类型
             --enable-static \
             --disable-shared \
             --disable-nls \
             --with-appletls \
             --with-libgmp \
-            --with-libgmp-prefix=${{ env.INSTALL_PREFIX }} \  # 指定 libgmp 的安装路径
+            --with-libgmp-prefix=${{ env.INSTALL_PREFIX }} \
             --with-sqlite3 \
             --with-libz \
             --with-libexpat \
@@ -172,11 +186,11 @@ jobs:
             --without-libxml2 \
             ARIA2_STATIC=yes \
             --prefix=${{ env.INSTALL_PREFIX }} \
-            CFLAGS="$CFLAGS -I${{ env.INSTALL_PREFIX }}/include $LTO_FLAGS" \  # 添加 include 路径
-            CXXFLAGS="$CXXFLAGS -I${{ env.INSTALL_PREFIX }}/include $LTO_FLAGS" \  # 添加 include 路径
-            LDFLAGS="$LDFLAGS -L${{ env.INSTALL_PREFIX }}/lib"  # 添加 lib 路径
+            CFLAGS="$CFLAGS -I${{ env.INSTALL_PREFIX }}/include $LTO_FLAGS" \
+            CXXFLAGS="$CXXFLAGS -I${{ env.INSTALL_PREFIX }}/include $LTO_FLAGS" \
+            LDFLAGS="$LDFLAGS -L${{ env.INSTALL_PREFIX }}/lib"
           make -j$(sysctl -n hw.ncpu)
-
+      
       - name: Test aria2
         run: |
           cd aria2
