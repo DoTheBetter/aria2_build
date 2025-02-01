@@ -28,6 +28,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install Autotools
+        run: |
+          brew install autoconf automake libtool
+
       - name: Set up environment variables
         run: |
           set -x  # 启用调试模式
@@ -128,10 +132,6 @@ jobs:
           ./configure --with-pic --without-openssl --with-libgcrypt=${{ env.INSTALL_PREFIX }} --with-libgcrypt-prefix=${{ env.INSTALL_PREFIX }} --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS $LTO_FLAGS -I${{ env.INSTALL_PREFIX }}/include" CXXFLAGS="$CXXFLAGS $LTO_FLAGS -I${{ env.INSTALL_PREFIX }}/include" LDFLAGS="$LDFLAGS -L${{ env.INSTALL_PREFIX }}/lib"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
-
-      - name: Install Autotools
-        run: |
-          brew install autoconf automake libtool
 
       - name: Build and configure aria2
         run: |
