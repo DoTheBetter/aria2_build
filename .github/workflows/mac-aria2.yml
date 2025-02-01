@@ -144,17 +144,6 @@ jobs:
 
       - name: Build and configure aria2
         run: |
-          # 获取系统架构
-          ARCH=$(uname -m)
-          if [ "$ARCH" = "x86_64" ]; then
-            BUILD_SYSTEM="x86_64-apple-darwin"
-          elif [ "$ARCH" = "arm64" ]; then
-            BUILD_SYSTEM="arm64-apple-darwin"
-          else
-            echo "Unsupported architecture: $ARCH"
-            exit 1
-          fi
-      
           git clone https://github.com/aria2/aria2.git
           cd aria2
           if [ -d "$GITHUB_WORKSPACE/patch" ]; then
@@ -162,11 +151,9 @@ jobs:
               patch -p1 < "$patch_file" || exit 1
             done
           fi
-          autoreconf -i
+          autoupdate  # 运行 autoupdate 更新 configure.ac
+          autoreconf -i  # 重新生成 configure 脚本
           ./configure \
-            --build=$BUILD_SYSTEM \  # 动态设置 build 系统类型
-            --host=$BUILD_SYSTEM \   # 动态设置 host 系统类型
-            --target=$BUILD_SYSTEM \ # 动态设置 target 系统类型
             --enable-static \
             --disable-shared \
             --disable-nls \
