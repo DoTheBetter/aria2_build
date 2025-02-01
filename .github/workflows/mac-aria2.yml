@@ -30,6 +30,7 @@ jobs:
 
       - name: Set up environment variables
         run: |
+          set -x  # 启用调试模式
           echo "CC=cc" >> $GITHUB_ENV
           echo "CXX=c++ -stdlib=libc++" >> $GITHUB_ENV
           echo "PLATFORMFLAGS=-mmacosx-version-min=10.10" >> $GITHUB_ENV
@@ -39,15 +40,7 @@ jobs:
           echo "LDFLAGS=-Wl,-dead_strip" >> $GITHUB_ENV
           echo "LTO_FLAGS=-flto -ffunction-sections -fdata-sections" >> $GITHUB_ENV
           echo "INSTALL_PREFIX=$GITHUB_WORKSPACE/arch" >> $GITHUB_ENV
-
-          # 打印环境变量以验证
-          echo "PLATFORMFLAGS: $PLATFORMFLAGS" >&2
-          echo "OPTFLAGS: $OPTFLAGS" >&2
-          echo "CFLAGS: $CFLAGS" >&2
-          echo "CXXFLAGS: $CXXFLAGS" >&2
-          echo "LDFLAGS: $LDFLAGS" >&2
-          echo "INSTALL_PREFIX: $INSTALL_PREFIX" >&2
-    
+         
       - name: Download and extract dependencies
         run: |
           # 动态生成 EXPAT_RELEASE_TAG
@@ -111,10 +104,10 @@ jobs:
       - name: Build and install GMP
         run: |
           cd gmp-${{ env.GMP_VERSION }}
-          ./configure --disable-cxx --enable-assembly --with-pic --enable-fat --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
+          ./configure --enable-assembly --with-pic --prefix=${{ env.INSTALL_PREFIX }} CFLAGS="$CFLAGS -I${{ env.INSTALL_PREFIX }}/include" CXXFLAGS="$CXXFLAGS -I${{ env.INSTALL_PREFIX }}/include" LDFLAGS="$LDFLAGS -L${{ env.INSTALL_PREFIX }}/lib"
           make -j$(sysctl -n hw.ncpu)
           sudo make install
-
+          
       - name: Build and install libgpg-error
         run: |
           cd libgpg-error-${{ env.LIBGPGERROR_VERSION }}
