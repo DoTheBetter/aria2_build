@@ -1,0 +1,81 @@
+name: "Build and Release"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  static-build:
+    runs-on: ubuntu-latest
+    container: "ghcr.io/abcfy2/musl-cross-toolchain-ubuntu:${{ matrix.CROSS_HOST }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        CROSS_HOST:
+          - arm-unknown-linux-musleabi
+          - aarch64-unknown-linux-musl
+          - x86_64-unknown-linux-musl
+          - i686-unknown-linux-musl
+          - x86_64-w64-mingw32
+          - i686-w64-mingw32
+        ARIA2_VER: ["master"]  # 默认值为 master，可为特定版本（如 1.36.0）
+        USE_CHINA_MIRROR: [0]  # 默认值为 0，设置为 1 使用中国镜像
+        USE_ZLIB_NG: [1]       # 默认值为 1，表示使用 zlib-ng 而不是 zlib
+        USE_LIBRESSL: [0]      # 默认值为 0，表示使用 OpenSSL，可以设置为 1 以使用 LibreSSL
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: downloads/
+          key: build-cache-${{ matrix.CROSS_HOST }}-${{ github.sha }}
+          restore-keys: |
+            build-cache-${{ matrix.CROSS_HOST }}-
+
+      - name: compile
+        env:
+          CROSS_HOST: "${{ matrix.CROSS_HOST }}"
+          ARIA2_VER: "${{ matrix.ARIA2_VER }}"
+          USE_CHINA_MIRROR: "${{ matrix.USE_CHINA_MIRROR }}"
+          USE_ZLIB_NG: "${{ matrix.USE_ZLIB_NG }}"
+          USE_LIBRESSL: "${{ matrix.USE_LIBRESSL }}"
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/build.sh"
+          "${GITHUB_WORKSPACE}/build.sh"
+
+      - name: Package aria2 binary
+        env:
+          CROSS_HOST: "${{ matrix.CROSS_HOST }}"
+          ARIA2_VER: "${{ matrix.ARIA2_VER }}"
+          USE_LIBRESSL: "${{ matrix.USE_LIBRESSL }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          apt install -y zip curl
+          if [ "$ARIA2_VER" = "master" ]; then
+            echo "Fetching latest ARIA2 version from GitHub..."
+            ARIA2_VER=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
+          fi
+          echo "ARIA2 version: $ARIA2_VER"
+          echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
+          
+          if [ x"${USE_LIBRESSL}" = x"1" ]; then
+            ARCHIVE_NAME="aria2-${ARIA2_VER}-${CROSS_HOST//-unknown/}_libressl_static.zip"
+          else
+            ARCHIVE_NAME="aria2-${ARIA2_VER}-${CROSS_HOST//-unknown/}_static.zip"
+          fi
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
+          zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
+
+          mkdir -p release
+          cp "/tmp/${ARCHIVE_NAME}" "release/${ARCHIVE_NAME}"
+          cp build_info.md "release/aria2-${ARIA2_VER}-${CROSS_HOST//-unknown/}.md"
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria2-${{ env.ARIA2_VER }}-${{ matrix.CROSS_HOST }}
+          path: |
+            release/

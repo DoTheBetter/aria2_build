@@ -1,0 +1,107 @@
+name: Build aria2 with AppleTLS for MacOS (64-bit)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/mac-aria2.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install automake autoconf libtool pkg-config
+          brew install libssh2 zlib sqlite3 c-ares libxml2 nettle gmp cppunit
+
+      - name: Build and configure aria2
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+          export LDFLAGS="-L/opt/homebrew/lib"
+          export CPPFLAGS="-I/opt/homebrew/include"
+          autoreconf -i
+          ./configure \
+            --enable-static \
+            --disable-shared \
+            --with-appletls \
+            --with-libz \
+            --with-libcares \
+            --with-sqlite3 \
+            --with-libxml2 \
+            --with-libgmp \
+            --with-libnettle \
+            --with-libssh2 \
+            --enable-metalink \
+            --enable-bittorrent \
+            --enable-websocket \
+            --disable-nls \
+            ARIA2_STATIC=yes
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Test aria2
+        run: |
+          cd aria2
+          ./src/aria2c --version
+          make check
+          
+          echo "验证二进制文件的架构:"
+          file ./src/aria2c
+          echo "验证是否为静态链接:"
+          otool -L ./src/aria2c
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          ARIA2_VERSION=$(aria2/src/aria2c --version | head -n 1 | awk '{print $3}')
+          echo "Extracted ARIA2_VERSION: $ARIA2_VERSION"
+          
+          BINARY_NAME="aria2-${ARIA2_VERSION}-arm64-macos-dynamic"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+
+          ARIA2_VER_INFO="$(aria2/src/aria2c --version 2>/dev/null)"
+   
+          BUILD_INFO="release/$BINARY_NAME.md"
+          echo "## Build Info - arm64 With AppleTLS for MacOS (64-bit)" >"${BUILD_INFO}"
+          echo "Building using these dependencies:" >>"${BUILD_INFO}"
+          echo '```bash' >>"${BUILD_INFO}"
+          echo "brew install libssh2 zlib sqlite3 c-ares libxml2 nettle gmp" >>"${BUILD_INFO}"
+          echo '```' >>"${BUILD_INFO}"          
+          echo "- libssh2: $(pkg-config --modversion libssh2)" >> "$BUILD_INFO"
+          echo "- zlib: $(pkg-config --modversion zlib)" >> "$BUILD_INFO"
+          echo "- sqlite3: $(pkg-config --modversion sqlite3)" >> "$BUILD_INFO"
+          echo "- libcares: $(pkg-config --modversion libcares)" >> "$BUILD_INFO"
+          echo "- libxml2: $(pkg-config --modversion libxml-2.0)" >> "$BUILD_INFO"
+          echo "- nettle: $(pkg-config --modversion nettle)" >> "$BUILD_INFO"
+          echo "- gmp: $(pkg-config --modversion gmp)" >> "$BUILD_INFO"
+          echo >>"${BUILD_INFO}"
+          echo "aria2 version info:" >>"${BUILD_INFO}"
+          echo '```txt' >>"${BUILD_INFO}"
+          echo "${ARIA2_VER_INFO}" >>"${BUILD_INFO}"
+          echo '```' >>"${BUILD_INFO}"
+          echo "aria2 binary info:" >>"${BUILD_INFO}"
+          echo '```txt' >>"${BUILD_INFO}"
+          echo "$(file aria2/src/aria2c)" >> "${BUILD_INFO}"
+          echo '```' >>"${BUILD_INFO}"
+          
+          zip -j9v "release/$BINARY_NAME.zip" aria2/src/aria2c
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: |
+            release/

@@ -1,0 +1,254 @@
+name: "ARIA2 Build and Release"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-on-ubuntu:
+    runs-on: ubuntu-latest
+    container: "ghcr.io/abcfy2/musl-cross-toolchain-ubuntu:${{ matrix.CROSS_HOST }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        CROSS_HOST:
+          - arm-unknown-linux-musleabi
+          - aarch64-unknown-linux-musl
+          - x86_64-unknown-linux-musl
+          - i686-unknown-linux-musl
+          - x86_64-w64-mingw32
+          - i686-w64-mingw32
+        ARIA2_VER: [""] # 默认值为 master，可为特定版本（如 1.36.0）
+        USE_CHINA_MIRROR: [0] # 默认值为 0，设置为 1 使用中国镜像
+        USE_ZLIB_NG: [1] # 默认值为 1，表示使用 zlib-ng 而不是 zlib
+        USE_LIBRESSL: [0] # 默认值为 0，表示使用 OpenSSL，可以设置为 1 以使用 LibreSSL
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: downloads/
+          key: build-cache-${{ matrix.CROSS_HOST }}-${{ github.sha }}
+          restore-keys: |
+            build-cache-${{ matrix.CROSS_HOST }}-
+
+      - name: compile
+        env:
+          CROSS_HOST: "${{ matrix.CROSS_HOST }}"
+          ARIA2_VER: "${{ matrix.ARIA2_VER }}"
+          USE_CHINA_MIRROR: "${{ matrix.USE_CHINA_MIRROR }}"
+          USE_ZLIB_NG: "${{ matrix.USE_ZLIB_NG }}"
+          USE_LIBRESSL: "${{ matrix.USE_LIBRESSL }}"
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/build.sh"
+          "${GITHUB_WORKSPACE}/build.sh"
+
+      - name: Package aria2 binary
+        env:
+          CROSS_HOST: "${{ matrix.CROSS_HOST }}"
+          ARIA2_VER: "${{ matrix.ARIA2_VER }}"
+          USE_LIBRESSL: "${{ matrix.USE_LIBRESSL }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          apt install -y zip curl
+          if [ -z "${ARIA2_VER}" ]; then
+            echo "Fetching latest ARIA2 version from GitHub..."
+            ARIA2_VER=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
+          fi
+          echo "ARIA2 version: $ARIA2_VER"
+          echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
+
+          if [ x"${USE_LIBRESSL}" = x"1" ]; then
+            ARCHIVE_NAME="aria2-${ARIA2_VER}-${CROSS_HOST//-unknown/}_libressl_static.zip"
+          else
+            ARCHIVE_NAME="aria2-${ARIA2_VER}-${CROSS_HOST//-unknown/}_static.zip"
+          fi
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
+          zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
+
+          mkdir -p release
+          cp "/tmp/${ARCHIVE_NAME}" "release/${ARCHIVE_NAME}"
+          cp build_info.md "release/aria2-${ARIA2_VER}-${CROSS_HOST//-unknown/}.md"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria2-${{ env.ARIA2_VER }}-${{ matrix.CROSS_HOST }}
+          path: |
+            release/
+
+  build-on-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install automake autoconf libtool pkg-config
+          brew install libssh2 zlib sqlite3 c-ares libxml2 nettle gmp cppunit
+
+      - name: Build and configure aria2
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+          export LDFLAGS="-L/opt/homebrew/lib"
+          export CPPFLAGS="-I/opt/homebrew/include"
+          autoreconf -i
+          ./configure \
+            --enable-static \
+            --disable-shared \
+            --with-appletls \
+            --with-libz \
+            --with-libcares \
+            --with-sqlite3 \
+            --with-libxml2 \
+            --with-libgmp \
+            --with-libnettle \
+            --with-libssh2 \
+            --enable-metalink \
+            --enable-bittorrent \
+            --enable-websocket \
+            --disable-nls \
+            ARIA2_STATIC=yes
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Test aria2
+        run: |
+          cd aria2
+          ./src/aria2c --version
+          make check
+
+          echo "验证二进制文件的架构:"
+          file ./src/aria2c
+          echo "验证是否为静态链接:"
+          otool -L ./src/aria2c
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          ARIA2_VERSION=$(aria2/src/aria2c --version | head -n 1 | awk '{print $3}')
+          echo "Extracted ARIA2_VERSION: $ARIA2_VERSION"
+
+          BINARY_NAME="aria2-${ARIA2_VERSION}-arm64-macos-dynamic"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+
+          ARIA2_VER_INFO="$(aria2/src/aria2c --version 2>/dev/null)"
+
+          BUILD_INFO="release/$BINARY_NAME.md"
+          echo "## Build Info - arm64 With AppleTLS for MacOS (64-bit)" >"${BUILD_INFO}"
+          echo "Building using these dependencies:" >>"${BUILD_INFO}"
+          echo '```bash' >>"${BUILD_INFO}"
+          echo "brew install libssh2 zlib sqlite3 c-ares libxml2 nettle gmp" >>"${BUILD_INFO}"
+          echo '```' >>"${BUILD_INFO}"          
+          echo "- libssh2: $(pkg-config --modversion libssh2)" >> "$BUILD_INFO"
+          echo "- zlib: $(pkg-config --modversion zlib)" >> "$BUILD_INFO"
+          echo "- sqlite3: $(pkg-config --modversion sqlite3)" >> "$BUILD_INFO"
+          echo "- libcares: $(pkg-config --modversion libcares)" >> "$BUILD_INFO"
+          echo "- libxml2: $(pkg-config --modversion libxml-2.0)" >> "$BUILD_INFO"
+          echo "- nettle: $(pkg-config --modversion nettle)" >> "$BUILD_INFO"
+          echo "- gmp: $(pkg-config --modversion gmp)" >> "$BUILD_INFO"
+          echo >>"${BUILD_INFO}"
+          echo "aria2 version info:" >>"${BUILD_INFO}"
+          echo '```txt' >>"${BUILD_INFO}"
+          echo "${ARIA2_VER_INFO}" >>"${BUILD_INFO}"
+          echo '```' >>"${BUILD_INFO}"
+          echo "aria2 binary info:" >>"${BUILD_INFO}"
+          echo '```txt' >>"${BUILD_INFO}"
+          echo "$(file aria2/src/aria2c)" >> "${BUILD_INFO}"
+          echo '```' >>"${BUILD_INFO}"
+
+          zip -j9v "release/$BINARY_NAME.zip" aria2/src/aria2c
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: |
+            release/
+
+  Release:
+    needs: [build-on-ubuntu, build-on-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          pattern: aria2-*
+          merge-multiple: true
+
+      - name: Merge and clean .md files
+        run: |
+          cd release
+          echo "List of downloaded files:"
+          ls -laR .
+
+          touch build_info.txt
+          find . -maxdepth 1 -type f -name "*.md" -print0 | xargs -0 ls -t | while read -r file; do
+            if [[ -f "$file" ]]; then
+              echo "Appending content of $file to build_info.txt"
+              cat "$file" >> build_info.txt
+              echo "" >> build_info.txt
+            fi
+          done
+          rm *.md
+          mv build_info.txt build_info.md
+
+          echo "Final list of files in release directory:"
+          ls -laR .
+
+      - name: Check release folder
+        id: check_release_folder
+        run: |
+          if [ -n "$(ls -A release)" ]; then
+            echo "Release folder is not empty, proceeding to the next step."
+            echo "is_empty=false" >> $GITHUB_OUTPUT
+          else
+            echo "Release folder is empty, stopping the workflow."
+            echo "is_empty=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete existing release and tag if they exist
+        if: steps.check_release_folder.outputs.is_empty == 'false'
+        run: |
+          ARIA2_VER=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
+          echo "ARIA2 version: $ARIA2_VER"
+          echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
+
+          RELEASE_ID=$(gh api "repos/${{ github.repository }}/releases/tags/v${ARIA2_VER}" --jq '.id' 2>/dev/null || echo "")
+          if [[ -n "$RELEASE_ID" && "$RELEASE_ID" != "null" && "$RELEASE_ID" != '{"message":"Not Found"'* ]]; then
+            echo "Deleting existing release with tag v${ARIA2_VER}..."
+            gh api "repos/${{ github.repository }}/releases/$RELEASE_ID" --method DELETE
+            echo "Deleting tag v${ARIA2_VER}..."
+            gh api "repos/${{ github.repository }}/git/refs/tags/v${ARIA2_VER}" --method DELETE
+          else
+            echo "No existing release found with tag v${ARIA2_VER}. Skipping deletion."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  
+      - name: Create GitHub Release and Upload Assets
+        if: steps.check_release_folder.outputs.is_empty == 'false'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.ARIA2_VER }}
+          name: Aria2 v${{ env.ARIA2_VER }} static
+          body_path: release/build_info.md
+          draft: false
+          prerelease: false
+          files: |
+            release/*.zip

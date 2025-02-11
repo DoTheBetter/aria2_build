@@ -1,0 +1,266 @@
+name: Build aria2 with OpenSSL for Linux (64/32-bit)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/linux-aria2.yml'
+  workflow_dispatch:
+
+env:
+  CARES_VERSION: "1.34.4"
+  EXPAT_VERSION: "2.6.4"
+  ZLIB_VERSION: "1.3.1"
+  SQLITE_VERSION: "3480000"
+  LIBSSH2_VERSION: "1.11.1"
+  OPENSSL_VERSION: "3.4.0"
+  CPPUNIT_VERSION: "1.15.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        arch: [amd64, arm64, 386, armv7]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install common dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            autoconf \
+            automake \
+            autotools-dev \
+            libtool \
+            pkg-config \
+            libssl-dev \
+            libexpat1-dev \
+            libc-ares-dev \
+            libsqlite3-dev \
+            zlib1g-dev \
+            git \
+            wget \
+            autopoint
+
+      - name: Set up environment for ${{ matrix.arch }}
+        run: |
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            export CC="gcc"
+            export CXX="g++"
+            export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+            export ARCH_SUFFIX="linux-amd64"
+            export HOST="x86_64-linux-gnu"
+            sudo apt-get install -y gcc-multilib
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            export CC="aarch64-linux-gnu-gcc"
+            export CXX="aarch64-linux-gnu-g++"
+            export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
+            export ARCH_SUFFIX="linux-arm64"
+            export HOST="aarch64-linux-gnu"
+            sudo apt-get install -y gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu
+          elif [ "${{ matrix.arch }}" = "386" ]; then
+            export CC="gcc -m32"
+            export CXX="g++ -m32"
+            export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
+            export ARCH_SUFFIX="linux-386"
+            export HOST="i386-linux-gnu"
+            sudo apt-get install -y gcc-multilib
+          elif [ "${{ matrix.arch }}" = "armv7" ]; then
+            export CC="arm-linux-gnueabihf-gcc"
+            export CXX="arm-linux-gnueabihf-g++"
+            export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
+            export ARCH_SUFFIX="linux-armv7"
+            export HOST="arm-linux-gnueabihf"
+            sudo apt-get install -y gcc-11-arm-linux-gnueabihf g++-11-arm-linux-gnueabihf
+          fi
+          echo "CC=$CC" >> $GITHUB_ENV
+          echo "CXX=$CXX" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "ARCH_SUFFIX=$ARCH_SUFFIX" >> $GITHUB_ENV
+          echo "HOST=$HOST" >> $GITHUB_ENV
+
+      - name: Build and install CppUnit
+        run: |
+          wget http://dev-www.libreoffice.org/src/cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
+          tar xzf cppunit-${{ env.CPPUNIT_VERSION }}.tar.gz
+          cd cppunit-${{ env.CPPUNIT_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure --prefix=/usr/local --host=${{ env.HOST }} --disable-shared --enable-static
+          else
+            ./configure --prefix=/usr/local --disable-shared --enable-static
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install OpenSSL
+        run: |
+          wget https://www.openssl.org/source/openssl-${{ env.OPENSSL_VERSION }}.tar.gz
+          tar xzf openssl-${{ env.OPENSSL_VERSION }}.tar.gz
+          cd openssl-${{ env.OPENSSL_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./Configure --prefix=/usr/local --openssldir=/usr/local/ssl ${{ env.HOST }} no-shared
+          else
+            ./config --prefix=/usr/local --openssldir=/usr/local/ssl no-shared
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install c-ares
+        run: |
+          wget https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz
+          tar xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
+          cd c-ares-${{ env.CARES_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure --prefix=/usr/local --host=${{ env.HOST }} --disable-shared --enable-static
+          else
+            ./configure --prefix=/usr/local --disable-shared --enable-static
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install expat
+        run: |
+          EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
+          EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
+          wget https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
+          tar xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
+          cd expat-${{ env.EXPAT_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure --prefix=/usr/local --host=${{ env.HOST }} --disable-shared --enable-static
+          else
+            ./configure --prefix=/usr/local --disable-shared --enable-static
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install zlib
+        run: |
+          wget https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          tar xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          cd zlib-${{ env.ZLIB_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure --prefix=/usr/local --host=${{ env.HOST }} --static
+          else
+            ./configure --prefix=/usr/local --static
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install sqlite3
+        run: |
+          wget https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          tar xzf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          cd sqlite-autoconf-${{ env.SQLITE_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure --prefix=/usr/local --host=${{ env.HOST }} --disable-shared --enable-static
+          else
+            ./configure --prefix=/usr/local --disable-shared --enable-static
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install libssh2
+        run: |
+          wget https://libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+          tar xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+          cd libssh2-${{ env.LIBSSH2_VERSION }}
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure --prefix=/usr/local --with-openssl --host=${{ env.HOST }} --disable-shared --enable-static
+          else
+            ./configure --prefix=/usr/local --with-openssl --disable-shared --enable-static
+          fi
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install aria2 (static)
+        run: |
+          git clone https://github.com/aria2/aria2.git
+          cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+          autoreconf -f -i
+          if [ -n "${{ env.HOST }}" ]; then
+            ./configure \
+              --prefix=/usr/local \
+              --enable-static \
+              --disable-shared \
+              --with-openssl \
+              --without-gnutls \
+              --without-libnettle \
+              --without-libgcrypt \
+              --without-appletls \
+              --without-wintls \
+              --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+              --with-libexpat \
+              --with-libz \
+              --with-libcares \
+              --with-sqlite3 \
+              --with-libssh2 \
+              --host=${{ env.HOST }} \
+              LDFLAGS="-static -static-libgcc -static-libstdc++"
+          else
+            ./configure \
+              --prefix=/usr/local \
+              --enable-static \
+              --disable-shared \
+              --with-openssl \
+              --without-gnutls \
+              --without-libnettle \
+              --without-libgcrypt \
+              --without-appletls \
+              --without-wintls \
+              --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+              --with-libexpat \
+              --with-libz \
+              --with-libcares \
+              --with-sqlite3 \
+              --with-libssh2 \
+              LDFLAGS="-static -static-libgcc -static-libstdc++"
+          fi
+          make -j$(nproc)
+          strip src/aria2c
+
+      - name: Run aria2 tests
+        run: |
+          cd aria2
+          make check
+          ./src/aria2c --version
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd aria2/src
+          sha256sum aria2c > aria2c.sha256
+          cat aria2c.sha256
+
+      - name: Get aria2 version
+        id: get-aria2-version
+        run: |
+          cd aria2
+          ARIA2_VERSION=$(grep 'PACKAGE_VERSION=' configure | cut -d"'" -f2)
+          echo "ARIA2_VERSION=${ARIA2_VERSION}" >> $GITHUB_ENV
+          echo "aria2 version: ${ARIA2_VERSION}"
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-${{ env.ARCH_SUFFIX }}"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+
+          cp aria2/src/aria2c "release/$BINARY_NAME"
+          cp aria2/src/aria2c.sha256 "release/$BINARY_NAME.sha256"
+          sed -i "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: |
+            release/${{ env.BINARY_NAME }}
+            release/${{ env.BINARY_NAME }}.sha256

@@ -1,0 +1,224 @@
+name: Build aria2 with WinTLS for Windows (64/32-bit)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/windows-aria2.yml'
+  workflow_dispatch:
+
+env:
+  GMP_VERSION: "6.3.0"
+  EXPAT_VERSION: "2.6.4"
+  SQLITE_VERSION: "3480000"
+  ZLIB_VERSION: "1.3.1"
+  CARES_VERSION: "1.34.4"
+  LIBSSH2_VERSION: "1.11.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        host: [i686-w64-mingw32, x86_64-w64-mingw32]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up environment for ${{ matrix.host }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make binutils autoconf automake autotools-dev libtool \
+            patch ca-certificates \
+            pkg-config git curl dpkg-dev gcc-mingw-w64 g++-mingw-w64 \
+            autopoint libxml2-dev libgcrypt20-dev lzip \
+            python3-docutils \
+            mingw-w64-tools mingw-w64-common \
+            mingw-w64-i686-dev mingw-w64-x86-64-dev \
+            upx
+
+      - name: Download and extract dependencies
+        run: |
+          EXPAT_VERSION_UNDERSCORE=$(echo ${{ env.EXPAT_VERSION }} | sed 's/\./_/g')
+          EXPAT_VERSION_UNDERSCORE="R_${EXPAT_VERSION_UNDERSCORE}"
+
+          # 下载依赖源码
+          curl -L -o gmp-${{ env.GMP_VERSION }}.tar.gz https://ftpmirror.gnu.org/gmp/gmp-${{ env.GMP_VERSION }}.tar.gz
+          curl -L -o expat-${{ env.EXPAT_VERSION }}.tar.gz https://github.com/libexpat/libexpat/releases/download/$EXPAT_VERSION_UNDERSCORE/expat-${{ env.EXPAT_VERSION }}.tar.gz
+          curl -L -o sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz https://www.sqlite.org/2025/sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          curl -L -o zlib-${{ env.ZLIB_VERSION }}.tar.gz https://zlib.net/zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          curl -L -o c-ares-${{ env.CARES_VERSION }}.tar.gz https://github.com/c-ares/c-ares/releases/download/v${{ env.CARES_VERSION }}/c-ares-${{ env.CARES_VERSION }}.tar.gz     
+          curl -L -o libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz https://www.libssh2.org/download/libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+
+          # 验证下载的文件是否有效
+          for file in *.tar.gz; do
+            if ! tar -tzf "$file" >/dev/null 2>&1; then
+              echo "Error: $file is not a valid gzip archive."
+              exit 1
+            fi
+          done
+
+          # 解压源码
+          tar -xzf gmp-${{ env.GMP_VERSION }}.tar.gz
+          tar -xzf expat-${{ env.EXPAT_VERSION }}.tar.gz
+          tar -xzf sqlite-autoconf-${{ env.SQLITE_VERSION }}.tar.gz
+          tar -xzf zlib-${{ env.ZLIB_VERSION }}.tar.gz
+          tar -xzf c-ares-${{ env.CARES_VERSION }}.tar.gz
+          tar -xzf libssh2-${{ env.LIBSSH2_VERSION }}.tar.gz
+
+      - name: Build and install GMP
+        run: |
+          cd gmp-${{ env.GMP_VERSION }}
+          sudo mkdir -p /usr/local/${{ matrix.host }}
+          sudo chown -R $USER:$USER /usr/local/${{ matrix.host }}
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --disable-cxx \
+            --enable-fat \
+            CFLAGS="-mtune=generic -O2 -g0"
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install Expat
+        run: |
+          cd expat-${{ env.EXPAT_VERSION }}
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install SQLite
+        run: |
+          cd sqlite-autoconf-${{ env.SQLITE_VERSION }}
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install Zlib
+        run: |
+          cd zlib-${{ env.ZLIB_VERSION }}
+          CC=${{ matrix.host }}-gcc \
+          AR=${{ matrix.host }}-ar \
+          LD=${{ matrix.host }}-ld \
+          RANLIB=${{ matrix.host }}-ranlib \
+          STRIP=${{ matrix.host }}-strip \
+          ./configure \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --libdir=/usr/local/${{ matrix.host }}/lib \
+            --includedir=/usr/local/${{ matrix.host }}/include \
+            --static
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install c-ares
+        run: |
+          cd c-ares-${{ env.CARES_VERSION }}
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --without-random \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
+            LIBS="-lws2_32"
+          make -j$(nproc)
+          sudo make install
+
+      - name: Build and install libssh2
+        run: |
+          cd libssh2-${{ env.LIBSSH2_VERSION }}
+          ./configure \
+            --disable-shared \
+            --enable-static \
+            --prefix=/usr/local/${{ matrix.host }} \
+            --host=${{ matrix.host }} \
+            --build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
+            LIBS="-lws2_32"
+          make -j$(nproc)
+          sudo make install
+
+      - name: Clone and build aria2
+        run: |
+          git clone --depth 1 https://github.com/aria2/aria2
+          cd aria2
+          if [ -d "$GITHUB_WORKSPACE/patch" ]; then
+            for patch_file in $GITHUB_WORKSPACE/patch/*.patch; do
+              patch -p1 < "$patch_file" || exit 1
+            done
+          fi
+          autoreconf -i
+          HOST=${{ matrix.host }}
+          PREFIX=/usr/local/${{ matrix.host }}
+          export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+          ./configure \
+            --host=$HOST \
+            --prefix=$PREFIX \
+            --enable-static \
+            --disable-shared \
+            --with-wintls \
+            --with-libssh2 \
+            --with-libcares \
+            --without-libxml2 \
+            --with-libexpat \
+            --with-libz \
+            --with-libsqlite3 \
+            --with-libnettle \
+            --with-libgmp \
+            --without-included-gettext \
+            --disable-nls \
+            --enable-bittorrent \
+            --enable-metalink \
+            --enable-websocket \
+            --with-cppunit-prefix=$PREFIX \
+            CPPFLAGS="-I$PREFIX/include -I/usr/$HOST/include -O2" \
+            LDFLAGS="-L$PREFIX/lib -static -static-libgcc -static-libstdc++ -s" \
+            PKG_CONFIG="/usr/bin/pkg-config"
+          make -j$(nproc)
+          ${{ matrix.host }}-strip src/aria2c.exe
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd aria2/src
+          upx --best aria2c.exe
+          sha256sum aria2c.exe > aria2c.exe.sha256
+          cat aria2c.exe.sha256
+
+      - name: Get aria2 version
+        id: get-aria2-version
+        run: |
+          cd aria2
+          ARIA2_VERSION=$(grep 'PACKAGE_VERSION=' configure | cut -d"'" -f2)
+          echo "ARIA2_VERSION=${ARIA2_VERSION}" >> $GITHUB_ENV
+          echo "aria2 version: ${ARIA2_VERSION}"
+
+      - name: Package aria2 binary
+        run: |
+          mkdir -p release
+          BINARY_NAME="aria2-${{ env.ARIA2_VERSION }}-win-${{ matrix.host == 'i686-w64-mingw32' && '32bit' || '64bit' }}"
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+
+          cp aria2/src/aria2c.exe "release/$BINARY_NAME".exe
+          cp aria2/src/aria2c.exe.sha256 "release/$BINARY_NAME.exe.sha256"
+          sed -i "s/aria2c/$BINARY_NAME/" "release/$BINARY_NAME.exe.sha256"
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: |
+            release/${{ env.BINARY_NAME }}.exe
+            release/${{ env.BINARY_NAME }}.exe.sha256
