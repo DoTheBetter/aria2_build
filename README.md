@@ -1,5 +1,9 @@
 ## aria 2_build
 
+仓库地址：[https://github.com/DoTheBetter/aria2_build](https://github.com/DoTheBetter/aria2_build)
+
+
+
 ### 魔改 aria 2 编译
 
 + OpenSSL for Linux (64/32-bit)
