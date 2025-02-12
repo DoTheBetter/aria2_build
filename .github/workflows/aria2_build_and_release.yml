@@ -6,7 +6,6 @@ on:
     - cron: "0 22 * * *"
 
 jobs:
-
   build-on-ubuntu:
     runs-on: ubuntu-latest
     container: "ghcr.io/abcfy2/musl-cross-toolchain-ubuntu:${{ matrix.CROSS_HOST }}"
@@ -185,6 +184,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -247,7 +249,7 @@ jobs:
           ARIA2_VER=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
           echo "ARIA2 version: $ARIA2_VER"
           echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
-          
+
           # 获取标签对应的发布版本ID
           RELEASE_ID=$(gh api -H "Accept: application/vnd.github.v3+json" "repos/${{ github.repository }}/releases/tags/v${ARIA2_VER}" -q .id)
           # 检查是否找到了发布版本ID
@@ -259,7 +261,7 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  
+
       - name: Create GitHub Release and Upload Assets
         if: github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
