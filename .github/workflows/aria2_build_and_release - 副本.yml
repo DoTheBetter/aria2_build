@@ -2,11 +2,8 @@ name: "ARIA2 Build and Release"
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 22 * * *"
 
 jobs:
-
   build-on-ubuntu:
     runs-on: ubuntu-latest
     container: "ghcr.io/abcfy2/musl-cross-toolchain-ubuntu:${{ matrix.CROSS_HOST }}"
@@ -212,56 +209,38 @@ jobs:
           echo "Final list of files in release directory:"
           ls -laR .
 
-      - name: Prepare and Create Prerelease
-        if: github.event_name == 'schedule'
+      - name: Check release folder
+        id: check_release_folder
         run: |
-          NOW=$(date --date='TZ="Asia/Shanghai"')
-          echo "NOW=$NOW"
-
-          gh release delete continuous --cleanup-tag || true
-          gh release create continuous -p -t 'Continuous build' --notes "Building time: $NOW
-          - - -
-          "
-          gh release edit continuous --draft=false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prerelease assets
-        if: github.event_name == 'schedule'
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: continuous
-          name: Continuous build
-          body_path: release/build_info.md
-          draft: false
-          prerelease: true
-          append_body: true
-          files: |
-            release/*.zip
+          if [ -n "$(ls -A release)" ]; then
+            echo "Release folder is not empty, proceeding to the next step."
+            echo "is_empty=false" >> $GITHUB_OUTPUT
+          else
+            echo "Release folder is empty, stopping the workflow."
+            echo "is_empty=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Delete existing release and tag if they exist
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.check_release_folder.outputs.is_empty == 'false'
         run: |
           ARIA2_VER=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
           echo "ARIA2 version: $ARIA2_VER"
           echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
-          
-          # 获取标签对应的发布版本ID
-          RELEASE_ID=$(gh api -H "Accept: application/vnd.github.v3+json" "repos/${{ github.repository }}/releases/tags/v${ARIA2_VER}" -q .id)
-          # 检查是否找到了发布版本ID
-          if [ -n "$RELEASE_ID" ]; then
-            echo "Deleting existing release with tag v${ARIA2_VER} (ID: $RELEASE_ID)..."
-            gh release delete "$RELEASE_ID" --cleanup-tag
+
+          RELEASE_ID=$(gh api "repos/${{ github.repository }}/releases/tags/v${ARIA2_VER}" --jq '.id' 2>/dev/null || echo "")
+          if [[ -n "$RELEASE_ID" && "$RELEASE_ID" != "null" && "$RELEASE_ID" != '{"message":"Not Found"'* ]]; then
+            echo "Deleting existing release with tag v${ARIA2_VER}..."
+            gh api "repos/${{ github.repository }}/releases/$RELEASE_ID" --method DELETE
+            echo "Deleting tag v${ARIA2_VER}..."
+            gh api "repos/${{ github.repository }}/git/refs/tags/v${ARIA2_VER}" --method DELETE
           else
-            echo "No release found with tag v${ARIA2_VER}. Skipping deletion."
+            echo "No existing release found with tag v${ARIA2_VER}. Skipping deletion."
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   
       - name: Create GitHub Release and Upload Assets
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.check_release_folder.outputs.is_empty == 'false'
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
