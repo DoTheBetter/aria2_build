@@ -215,9 +215,9 @@ jobs:
           ls -laR .
 
       - name: Prepare and Create Prerelease
-        # if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule'
         run: |
-          NOW=$(date --date='TZ="Asia/Shanghai"')
+          NOW=$(date --utc)
           echo "NOW=$NOW"
 
           gh release delete continuous --cleanup-tag || true
@@ -229,7 +229,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prerelease assets
-        # if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule'
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
