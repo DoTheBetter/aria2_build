@@ -255,7 +255,7 @@ jobs:
           # 检查是否找到了发布版本ID
           if [ -n "$RELEASE_ID" ]; then
             echo "Deleting existing release with tag v${ARIA2_VER} (ID: $RELEASE_ID)..."
-            gh release delete "$RELEASE_ID" --cleanup-tag
+            gh release delete "v${ARIA2_VER}" --cleanup-tag
           else
             echo "No release found with tag v${ARIA2_VER}. Skipping deletion."
           fi
