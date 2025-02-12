@@ -250,9 +250,7 @@ jobs:
           echo "ARIA2 version: $ARIA2_VER"
           echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
 
-          # 获取标签对应的发布版本ID
           RELEASE_ID=$(gh api -H "Accept: application/vnd.github.v3+json" "repos/${{ github.repository }}/releases/tags/v${ARIA2_VER}" -q .id)
-          # 检查是否找到了发布版本ID
           if [ -n "$RELEASE_ID" ]; then
             echo "Deleting existing release with tag v${ARIA2_VER} (ID: $RELEASE_ID)..."
             gh release delete "v${ARIA2_VER}" --cleanup-tag

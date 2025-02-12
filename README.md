@@ -63,6 +63,8 @@ https://github.com/aria2/aria2
 
 https://github.com/P3TERX/Aria2-Pro-Core
 
+https://github.com/myfreeer/aria2-build-msys2
+
 https://github.com/abcfy2/aria2-static-build
 
 https://git.q3aql.dev/q3aql/aria2-static-builds
