@@ -3,8 +3,15 @@
 ### 魔改 aria 2 编译
 
 + OpenSSL for Linux (64/32-bit)
+	+ x86_64-linux-musl_static
+	+ i686-linux-musl_static
+	+ aarch64-linux-musl_static
+	+ arm-linux-musleabi_static
 + WinTLS for Windows (64/32-bit)
+	+ x86_64-w64-mingw32_static
+	+ i686-w64-mingw32_static
 + AppleTLS for macOS (64-bit)
+	+ arm64-macos-dynamic 需安装依赖
 
 ### 修改内容
 
