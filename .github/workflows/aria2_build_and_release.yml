@@ -44,8 +44,6 @@ jobs:
           - x86_64-unknown-linux-musl
           - i686-unknown-linux-musl
         # use_libressl: [0, 1]
-    outputs:
-      build_success: ${{ steps.zip_archiving.outputs.zip_success }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -57,7 +55,6 @@ jobs:
           restore-keys: |
             build-cache-${{ matrix.cross_host }}-
       - name: compile
-        id: compile
         env:
           CROSS_HOST: "${{ matrix.cross_host }}"
           USE_LIBRESSL: "${{ matrix.use_libressl }}"
@@ -67,32 +64,22 @@ jobs:
             echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
           fi
           "${GITHUB_WORKSPACE}/build.sh"
-        continue-on-error: true
       - name: zip archiving
-        id: zip_archiving
-        if: always()
         env:
           CROSS_HOST: "${{ matrix.cross_host }}"
           # USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
-          apt install -y zip
+          apt update && apt install -y zip
           if [ x"${USE_LIBRESSL}" = x"1" ]; then
             ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_libressl_static.zip"
           else
             ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_static.zip"
           fi
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
-          # 检查 aria2c 文件是否存在
-          if ls "${GITHUB_WORKSPACE}"/aria2c* 1> /dev/null 2>&1; then
-            zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
-            echo "zip_success=true" >> $GITHUB_OUTPUT
-          else
-            echo "No aria2c files found, skipping zip"
-            echo "zip_success=false" >> $GITHUB_OUTPUT
-          fi
+          zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
         shell: bash
       - name: Prerelease assets
-        if: always() && steps.zip_archiving.outputs.zip_success == 'true' && github.event_name == 'schedule'
+        if: github.event_name == 'schedule'
         uses: softprops/action-gh-release@v3
         with:
           files: /tmp/${{ env.ARCHIVE_NAME }}
@@ -103,7 +90,7 @@ jobs:
           body_path: "${{ github.workspace }}/build_info.md"
           append_body: true
       - name: Upload Github Assets
-        if: always() && steps.zip_archiving.outputs.zip_success == 'true' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           files: /tmp/${{ env.ARCHIVE_NAME }}
@@ -120,8 +107,6 @@ jobs:
         cross_host:
           - x86_64-w64-mingw32
           - i686-w64-mingw32
-    outputs:
-      build_success: ${{ steps.zip_archiving.outputs.zip_success }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -133,7 +118,6 @@ jobs:
           restore-keys: |
             build-cache-${{ matrix.cross_host }}-
       - name: compile
-        id: compile
         env:
           CROSS_HOST: "${{ matrix.cross_host }}"
         run: |
@@ -142,32 +126,22 @@ jobs:
             echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
           fi
           "${GITHUB_WORKSPACE}/build.sh"
-        continue-on-error: true
       - name: zip archiving
-        id: zip_archiving
-        if: always()
         env:
           CROSS_HOST: "${{ matrix.cross_host }}"
           # USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
-          apt install -y zip
+          apt update && apt install -y zip
           if [ x"${USE_LIBRESSL}" = x"1" ]; then
             ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_libressl_static.zip"
           else
             ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_static.zip"
           fi
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
-          # 检查 aria2c 文件是否存在
-          if ls "${GITHUB_WORKSPACE}"/aria2c* 1> /dev/null 2>&1; then
-            zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
-            echo "zip_success=true" >> $GITHUB_OUTPUT
-          else
-            echo "No aria2c files found, skipping zip"
-            echo "zip_success=false" >> $GITHUB_OUTPUT
-          fi
+          zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
         shell: bash
       - name: Prerelease assets
-        if: always() && steps.zip_archiving.outputs.zip_success == 'true' && github.event_name == 'schedule'
+        if: github.event_name == 'schedule'
         uses: softprops/action-gh-release@v3
         with:
           files: /tmp/${{ env.ARCHIVE_NAME }}
@@ -178,7 +152,7 @@ jobs:
           body_path: "${{ github.workspace }}/build_info.md"
           append_body: true
       - name: Upload Github Assets
-        if: always() && steps.zip_archiving.outputs.zip_success == 'true' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           files: /tmp/${{ env.ARCHIVE_NAME }}
@@ -187,29 +161,18 @@ jobs:
           append_body: true
 
   build-on-macos:
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-13
-            arch: x86_64
-          - runner: macos-14
-            arch: arm64
-    outputs:
-      build_success: ${{ steps.create_archive.outputs.zip_success }}
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Setup build environment
         run: |
-          brew install automake autoconf libtool pkg-config \
-            openssl@3 sqlite libxml2 c-ares libssh2 zlib xz \
-            gmp nettle
+          brew update
+          brew install automake autoconf libtool pkg-config
+          brew install libssh2 zlib sqlite3 c-ares libxml2 nettle gmp cppunit
 
       - name: Build aria2
-        id: build
         run: |
           # 设置版本号
           if [ "${GITHUB_EVENT_NAME}" = release ]; then
@@ -232,8 +195,10 @@ jobs:
             echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
           fi
 
-          # 设置 PKG_CONFIG_PATH
-          export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:/opt/homebrew/opt/libxml2/lib/pkgconfig:/opt/homebrew/opt/sqlite/lib/pkgconfig:/opt/homebrew/opt/c-ares/lib/pkgconfig:/opt/homebrew/opt/libssh2/lib/pkgconfig:/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/xz/lib/pkgconfig:/opt/homebrew/opt/gmp/lib/pkgconfig:/opt/homebrew/opt/nettle/lib/pkgconfig:/usr/local/opt/openssl@3/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/sqlite/lib/pkgconfig:/usr/local/opt/c-ares/lib/pkgconfig:/usr/local/opt/libssh2/lib/pkgconfig:/usr/local/opt/zlib/lib/pkgconfig:/usr/local/opt/xz/lib/pkgconfig:/usr/local/opt/gmp/lib/pkgconfig:/usr/local/opt/nettle/lib/pkgconfig"
+          # 设置 PKG_CONFIG_PATH 和库路径
+          export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:/opt/homebrew/opt/libxml2/lib/pkgconfig:/opt/homebrew/opt/sqlite/lib/pkgconfig:/opt/homebrew/opt/c-ares/lib/pkgconfig:/opt/homebrew/opt/libssh2/lib/pkgconfig:/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/xz/lib/pkgconfig"
+          export LDFLAGS="-L/opt/homebrew/opt/gmp/lib -L/opt/homebrew/opt/nettle/lib"
+          export CPPFLAGS="-I/opt/homebrew/opt/gmp/include -I/opt/homebrew/opt/nettle/include"
 
           # 生成 configure 脚本
           autoreconf -i
@@ -262,31 +227,21 @@ jobs:
 
           # 创建构建信息
           cd ..
-          echo "## Build Info - macOS ${{ matrix.arch }}" > build_info.md
-          echo "- macOS ${{ matrix.arch }} native build" >> build_info.md
+          echo "## Build Info - macOS arm64" > build_info.md
+          echo "- macOS arm64 native build" >> build_info.md
           echo "- aria2 version: ${ARIA2_VER:-latest}" >> build_info.md
           echo "- OpenSSL: $(brew list openssl@3 --version | head -1)" >> build_info.md
           echo "- Build date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> build_info.md
-        continue-on-error: true
 
       - name: Create archive
-        id: create_archive
-        if: always()
         run: |
-          ARCHIVE_NAME="aria2-macos-${{ matrix.arch }}.zip"
+          ARCHIVE_NAME="aria2-macos-arm64.zip"
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
-          # 检查 aria2c 文件是否存在
-          if [ -f "aria2-src/src/aria2c" ]; then
-            cd aria2-src
-            zip -j9v "/tmp/${ARCHIVE_NAME}" src/aria2c
-            echo "zip_success=true" >> $GITHUB_OUTPUT
-          else
-            echo "aria2c not found, skipping zip"
-            echo "zip_success=false" >> $GITHUB_OUTPUT
-          fi
+          cd aria2-src
+          zip -j9v "/tmp/${ARCHIVE_NAME}" src/aria2c
 
       - name: Prerelease assets
-        if: always() && steps.create_archive.outputs.zip_success == 'true' && github.event_name == 'schedule'
+        if: github.event_name == 'schedule'
         uses: softprops/action-gh-release@v3
         with:
           files: /tmp/${{ env.ARCHIVE_NAME }}
@@ -298,49 +253,10 @@ jobs:
           append_body: true
 
       - name: Upload Github Assets
-        if: always() && steps.create_archive.outputs.zip_success == 'true' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           files: /tmp/${{ env.ARCHIVE_NAME }}
-          name: aria2 ${{ env.ARIA2_VER }} macOS ${{ matrix.arch }} release
+          name: aria2 ${{ env.ARIA2_VER }} macOS arm64 release
           body_path: "${{ github.workspace }}/build_info.md"
           append_body: true
-
-  check-status:
-    name: Check Build Status
-    if: always()
-    runs-on: ubuntu-latest
-    needs:
-      - static-build-linux
-      - static-build-mingw
-      - build-on-macos
-    steps:
-      - name: Check if any build succeeded
-        run: |
-          # 获取所有构建结果
-          LINUX_RESULTS='${{ toJson(needs.static-build-linux.outputs) }}'
-          MINGW_RESULTS='${{ toJson(needs.static-build-mingw.outputs) }}'
-          MACOS_RESULTS='${{ toJson(needs.build-on-macos.outputs) }}'
-          
-          echo "Linux build results: $LINUX_RESULTS"
-          echo "MinGW build results: $MINGW_RESULTS"
-          echo "macOS build results: $MACOS_RESULTS"
-          
-          # 检查是否有任何成功的构建
-          # 由于 matrix 策略，我们需要检查 needs 中的 result
-          LINUX_RESULT='${{ needs.static-build-linux.result }}'
-          MINGW_RESULT='${{ needs.static-build-mingw.result }}'
-          MACOS_RESULT='${{ needs.build-on-macos.result }}'
-          
-          echo "Linux job result: $LINUX_RESULT"
-          echo "MinGW job result: $MINGW_RESULT"
-          echo "macOS job result: $MACOS_RESULT"
-          
-          # 如果所有 job 都失败，则退出码为 1
-          if [ "$LINUX_RESULT" = "failure" ] && [ "$MINGW_RESULT" = "failure" ] && [ "$MACOS_RESULT" = "failure" ]; then
-            echo "::error::All builds failed!"
-            exit 1
-          fi
-          
-          echo "At least one build succeeded or was skipped."
-          exit 0
