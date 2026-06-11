@@ -242,35 +242,41 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v7
         with:
-          path: release
+          path: artifacts
           pattern: aria2-*
-          merge-multiple: true
 
       - name: Merge and clean .md files
         run: |
-          cd release
-          echo "List of downloaded files:"
-          ls -laR .
+          mkdir -p release
 
-          touch build_info.txt
+          echo "List of downloaded artifacts:"
+          ls -laR artifacts/
+
+          # 复制所有 zip 文件到 release 目录
+          find artifacts/ -name "*.zip" -exec cp {} release/ \;
+
+          # 合并所有 build_info.md 文件
+          touch release/build_info.txt
           NOW=$(date --utc)
           echo "NOW=$NOW"
-          cat <<EOF > build_info.txt
+          cat <<EOF > release/build_info.txt
           Building time: ${NOW}
           - - -
           EOF
-          find . -maxdepth 1 -type f -name "*.md" -print0 | xargs -0 ls -t | while read -r file; do
+
+          # 查找并合并所有 .md 文件
+          find artifacts/ -name "*.md" -type f | while read -r file; do
             if [[ -f "$file" ]]; then
               echo "Appending content of $file to build_info.txt"
-              cat "$file" >> build_info.txt
-              echo "" >> build_info.txt
+              cat "$file" >> release/build_info.txt
+              echo "" >> release/build_info.txt
             fi
           done
-          rm *.md
-          mv build_info.txt build_info.md
+
+          mv release/build_info.txt release/build_info.md
 
           echo "Final list of files in release directory:"
-          ls -laR .
+          ls -laR release/
 
       - name: Prepare and Create Prerelease
         run: |
@@ -305,29 +311,33 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v7
         with:
-          path: release
+          path: artifacts
           pattern: aria2-*
-          merge-multiple: true
 
       - name: Merge and clean .md files
         run: |
-          cd release
-          echo "List of downloaded files:"
-          ls -laR .
+          mkdir -p release
 
-          touch build_info.txt
-          find . -maxdepth 1 -type f -name "*.md" -print0 | xargs -0 ls -t | while read -r file; do
+          echo "List of downloaded artifacts:"
+          ls -laR artifacts/
+
+          # 复制所有 zip 文件到 release 目录
+          find artifacts/ -name "*.zip" -exec cp {} release/ \;
+
+          # 合并所有 build_info.md 文件
+          touch release/build_info.txt
+          find artifacts/ -name "*.md" -type f | while read -r file; do
             if [[ -f "$file" ]]; then
               echo "Appending content of $file to build_info.txt"
-              cat "$file" >> build_info.txt
-              echo "" >> build_info.txt
+              cat "$file" >> release/build_info.txt
+              echo "" >> release/build_info.txt
             fi
           done
-          rm *.md
-          mv build_info.txt build_info.md
+
+          mv release/build_info.txt release/build_info.md
 
           echo "Final list of files in release directory:"
-          ls -laR .
+          ls -laR release/
 
       - name: Delete existing release and tag if they exist
         run: |
@@ -358,3 +368,19 @@ jobs:
           files: |
             release/*.zip
 
+  del_runs:
+    needs: [static-build-linux, static-build-mingw, build-on-macos, prerelease, release]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 1
+          keep_minimum_runs: 1
+          delete_run_by_conclusion_pattern: "cancelled,failure,skipped"
