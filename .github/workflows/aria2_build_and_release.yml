@@ -50,10 +50,20 @@ jobs:
           # USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
           apt update && apt install -y zip
-          if [ x"${USE_LIBRESSL}" = x"1" ]; then
-            ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_libressl_static.zip"
+
+          # 获取 aria2 版本号
+          if [ -f "${GITHUB_WORKSPACE}/aria2c" ]; then
+            ARIA2_VERSION=$("${GITHUB_WORKSPACE}/aria2c" --version | head -n 1 | awk '{print $3}')
+            echo "ARIA2_VERSION: ${ARIA2_VERSION}"
           else
-            ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_static.zip"
+            # 如果 aria2c 不存在，尝试从环境变量获取
+            ARIA2_VERSION="${ARIA2_VER:-unknown}"
+          fi
+
+          if [ x"${USE_LIBRESSL}" = x"1" ]; then
+            ARCHIVE_NAME="aria2-${ARIA2_VERSION}-${CROSS_HOST//-unknown/}_libressl_static.zip"
+          else
+            ARCHIVE_NAME="aria2-${ARIA2_VERSION}-${CROSS_HOST//-unknown/}_static.zip"
           fi
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
           zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
@@ -65,7 +75,7 @@ jobs:
           name: aria2-${{ matrix.cross_host }}
           path: |
             /tmp/${{ env.ARCHIVE_NAME }}
-            ${{ github.workspace }}/build_info.md
+            build_info.md
 
   static-build-mingw:
     runs-on: ubuntu-latest
@@ -102,10 +112,20 @@ jobs:
           # USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
           apt update && apt install -y zip
-          if [ x"${USE_LIBRESSL}" = x"1" ]; then
-            ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_libressl_static.zip"
+
+          # 获取 aria2 版本号
+          if [ -f "${GITHUB_WORKSPACE}/aria2c" ]; then
+            ARIA2_VERSION=$("${GITHUB_WORKSPACE}/aria2c" --version | head -n 1 | awk '{print $3}')
+            echo "ARIA2_VERSION: ${ARIA2_VERSION}"
           else
-            ARCHIVE_NAME="aria2-${CROSS_HOST//-unknown/}_static.zip"
+            # 如果 aria2c 不存在，尝试从环境变量获取
+            ARIA2_VERSION="${ARIA2_VER:-unknown}"
+          fi
+
+          if [ x"${USE_LIBRESSL}" = x"1" ]; then
+            ARCHIVE_NAME="aria2-${ARIA2_VERSION}-${CROSS_HOST//-unknown/}_libressl_static.zip"
+          else
+            ARCHIVE_NAME="aria2-${ARIA2_VERSION}-${CROSS_HOST//-unknown/}_static.zip"
           fi
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
           zip -j9v "/tmp/${ARCHIVE_NAME}" "${GITHUB_WORKSPACE}"/aria2c*
@@ -117,7 +137,7 @@ jobs:
           name: aria2-${{ matrix.cross_host }}
           path: |
             /tmp/${{ env.ARCHIVE_NAME }}
-            ${{ github.workspace }}/build_info.md
+            build_info.md
 
   build-on-macos:
     runs-on: ${{ matrix.runner }}
