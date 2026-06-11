@@ -49,15 +49,17 @@ jobs:
           CROSS_HOST: "${{ matrix.cross_host }}"
           # USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
-          apt update && apt install -y zip
+          apt update && apt install -y zip curl
 
-          # 获取 aria2 版本号
-          if [ -f "${GITHUB_WORKSPACE}/aria2c" ]; then
-            ARIA2_VERSION=$("${GITHUB_WORKSPACE}/aria2c" --version | head -n 1 | awk '{print $3}')
-            echo "ARIA2_VERSION: ${ARIA2_VERSION}"
+          # 获取 aria2 版本号（优先从 GitHub API 获取）
+          ARIA2_VERSION=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
+
+          # 如果 API 获取失败，从环境变量获取（release 事件时设置）
+          if [ -z "${ARIA2_VERSION}" ] && [ -n "${ARIA2_VER}" ]; then
+            ARIA2_VERSION="${ARIA2_VER}"
+            echo "ARIA2_VERSION from env: ${ARIA2_VERSION}"
           else
-            # 如果 aria2c 不存在，尝试从环境变量获取
-            ARIA2_VERSION="${ARIA2_VER:-unknown}"
+            echo "ARIA2_VERSION from API: ${ARIA2_VERSION}"
           fi
 
           if [ x"${USE_LIBRESSL}" = x"1" ]; then
@@ -111,15 +113,17 @@ jobs:
           CROSS_HOST: "${{ matrix.cross_host }}"
           # USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
-          apt update && apt install -y zip
+          apt update && apt install -y zip curl
 
-          # 获取 aria2 版本号
-          if [ -f "${GITHUB_WORKSPACE}/aria2c" ]; then
-            ARIA2_VERSION=$("${GITHUB_WORKSPACE}/aria2c" --version | head -n 1 | awk '{print $3}')
-            echo "ARIA2_VERSION: ${ARIA2_VERSION}"
+          # 获取 aria2 版本号（优先从 GitHub API 获取）
+          ARIA2_VERSION=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
+
+          # 如果 API 获取失败，从环境变量获取（release 事件时设置）
+          if [ -z "${ARIA2_VERSION}" ] && [ -n "${ARIA2_VER}" ]; then
+            ARIA2_VERSION="${ARIA2_VER}"
+            echo "ARIA2_VERSION from env: ${ARIA2_VERSION}"
           else
-            # 如果 aria2c 不存在，尝试从环境变量获取
-            ARIA2_VERSION="${ARIA2_VER:-unknown}"
+            echo "ARIA2_VERSION from API: ${ARIA2_VERSION}"
           fi
 
           if [ x"${USE_LIBRESSL}" = x"1" ]; then
