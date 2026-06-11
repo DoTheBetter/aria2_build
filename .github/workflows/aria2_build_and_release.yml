@@ -63,6 +63,7 @@ jobs:
             export ARIA2_VER="${GITHUB_REF#refs/*/}"
             echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
           fi
+          chmod +x "${GITHUB_WORKSPACE}/build.sh"
           "${GITHUB_WORKSPACE}/build.sh"
       - name: zip archiving
         env:
@@ -125,6 +126,7 @@ jobs:
             export ARIA2_VER="${GITHUB_REF#refs/*/}"
             echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
           fi
+          chmod +x "${GITHUB_WORKSPACE}/build.sh"
           "${GITHUB_WORKSPACE}/build.sh"
       - name: zip archiving
         env:
