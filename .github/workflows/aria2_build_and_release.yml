@@ -30,8 +30,9 @@ jobs:
         id: cache
         with:
           path: downloads/
-          key: build-cache-${{ matrix.cross_host }}-${{ github.sha }}
+          key: build-cache-${{ matrix.cross_host }}-${{ github.sha }}-${{ github.event_name }}
           restore-keys: |
+            build-cache-${{ matrix.cross_host }}-${{ github.sha }}-
             build-cache-${{ matrix.cross_host }}-
       - name: compile
         env:
@@ -98,8 +99,9 @@ jobs:
         id: cache
         with:
           path: downloads/
-          key: build-cache-${{ matrix.cross_host }}-${{ github.sha }}
+          key: build-cache-${{ matrix.cross_host }}-${{ github.sha }}-${{ github.event_name }}
           restore-keys: |
+            build-cache-${{ matrix.cross_host }}-${{ github.sha }}-
             build-cache-${{ matrix.cross_host }}-
       - name: compile
         env:
