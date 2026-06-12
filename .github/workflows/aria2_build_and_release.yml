@@ -106,7 +106,10 @@ jobs:
           CROSS_HOST: "${{ matrix.cross_host }}"
         run: |
           if [ "${GITHUB_EVENT_NAME}" = release ]; then
+            # 从 GITHUB_REF 提取版本号并移除 'v' 前缀
+            # 例如: refs/tags/v1.37.0 -> 1.37.0
             export ARIA2_VER="${GITHUB_REF#refs/*/}"
+            ARIA2_VER="${ARIA2_VER#v}"
             echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
           fi
           chmod +x "${GITHUB_WORKSPACE}/build.sh"
