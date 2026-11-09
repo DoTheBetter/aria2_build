@@ -11,7 +11,7 @@ on:
 jobs:
   static-build-linux:
     runs-on: ubuntu-latest
-    container: "ghcr.io/abcfy2/clang-cross-toolchain-ubuntu:${{ matrix.cross_host }}"
+    container: "ghcr.io/abcfy2/musl-cross-toolchain-ubuntu:${{ matrix.cross_host }}"
     strategy:
       fail-fast: false
       matrix:
