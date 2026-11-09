@@ -159,11 +159,19 @@ if [ x"${USE_ZLIB_NG}" = x1 ]; then
 else
   ZLIB=zlib
 fi
-if [ x"${USE_LIBRESSL}" = x1 ]; then
-  SSL=LibreSSL
-else
-  SSL=OpenSSL
-fi
+case "${CROSS_HOST}" in
+  *mingw*)
+    # Windows 使用系统自带的 Schannel(WinTLS)，不编译 OpenSSL
+    SSL=WinTLS
+    ;;
+  *)
+    if [ x"${USE_LIBRESSL}" = x1 ]; then
+      SSL=LibreSSL
+    else
+      SSL=OpenSSL
+    fi
+    ;;
+esac
 
 echo "## Build Info - ${CROSS_HOST} with ${SSL} and ${ZLIB}" >"${BUILD_INFO}"
 echo "Building using these dependencies:" >>"${BUILD_INFO}"
@@ -477,7 +485,12 @@ build_aria2() {
   if [ ! -f ./configure ]; then
     autoreconf -i
   fi
-  ./configure --host="${CROSS_HOST}" --prefix="${CROSS_PREFIX}" --enable-static --disable-shared --enable-silent-rules --without-wintls ARIA2_STATIC=yes
+  if [ x"${SSL}" = xWinTLS ]; then
+    TLS_CONF="--with-wintls --without-openssl"
+  else
+    TLS_CONF="--without-wintls"
+  fi
+  ./configure --host="${CROSS_HOST}" --prefix="${CROSS_PREFIX}" --enable-static --disable-shared --enable-silent-rules ${TLS_CONF} ARIA2_STATIC=yes
   make -j$(nproc)
   make install
   echo "- aria2: source: ${aria2_latest_url:-cached aria2}" >>"${BUILD_INFO}"
@@ -516,7 +529,11 @@ prepare_cmake
 prepare_ninja
 prepare_zlib
 prepare_xz
-prepare_ssl
+if [ x"${SSL}" = xWinTLS ]; then
+  echo "- WinTLS: Windows Schannel (secur32/crypt32/advapi32), source: system" >>"${BUILD_INFO}"
+else
+  prepare_ssl
+fi
 prepare_libiconv
 prepare_libxml2
 prepare_sqlite
