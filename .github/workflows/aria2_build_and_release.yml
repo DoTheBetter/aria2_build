@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "为已存在的 release 重建并上传产物（留空则只更新 continuous 预览版）"
+        description: "留空或填写 continuous 则生成/更新 continuous 预览版；填写其他 tag 时，tag 不存在则自动新建正式 release，已存在则只更新附件并追加构建说明"
         required: false
         default: ""
   schedule:
@@ -197,8 +197,9 @@ jobs:
       - name: Package aria2 binary
         run: |
           mkdir -p release
-          ARIA2_VERSION=$(aria2/src/aria2c --version | head -n 1 | awk '{print $3}')
-          echo "Extracted ARIA2_VERSION: $ARIA2_VERSION"
+
+          # 始终基于 aria2 master 构建，产物版本号固定为 master
+          ARIA2_VERSION=master
 
           BINARY_NAME="aria2-${ARIA2_VERSION}-${{ matrix.arch }}-macos-dynamic"
           echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
@@ -238,9 +239,11 @@ jobs:
             release/
 
   prerelease:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_tag == '')
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.release_tag == '' || inputs.release_tag == 'continuous'))
     needs: [static-build-linux, static-build-mingw, build-on-macos]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -307,9 +310,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag != 'continuous')
     needs: [static-build-linux, static-build-mingw, build-on-macos]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -346,14 +351,39 @@ jobs:
           echo "Final list of files in release directory:"
           ls -laR release/
 
-      - name: Upload Assets to Triggering Release
+      - name: Check release exists
+        id: check_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+        run: |
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} exists, will update assets and append notes."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Release ${RELEASE_TAG} not found, will create it."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release if missing
+        if: steps.check_release.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+        run: |
+          gh release create "${RELEASE_TAG}" \
+            --title "aria2 ${RELEASE_TAG}" \
+            --notes-file release/build_info.md \
+            --target "${{ github.event.repository.default_branch }}"
+
+      - name: Upload Assets and Notes
         uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ inputs.release_tag || github.event.release.tag_name }}
           body_path: release/build_info.md
-          append_body: true
+          append_body: ${{ steps.check_release.outputs.exists == 'true' }}
           draft: false
           prerelease: false
           files: |
