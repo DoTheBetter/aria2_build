@@ -2,6 +2,11 @@ name: "ARIA2 Build and Release"
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "为已存在的 release 重建并上传产物（留空则只更新 continuous 预览版）"
+        required: false
+        default: ""
   schedule:
     - cron: "0 0 * * 6"  # 每周六 UTC 时间 00:00 运行
   release:
@@ -233,7 +238,7 @@ jobs:
             release/
 
   prerelease:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_tag == '')
     needs: [static-build-linux, static-build-mingw, build-on-macos]
     runs-on: ubuntu-latest
 
@@ -302,7 +307,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     needs: [static-build-linux, static-build-mingw, build-on-macos]
     runs-on: ubuntu-latest
 
@@ -346,8 +351,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ inputs.release_tag || github.event.release.tag_name }}
           body_path: release/build_info.md
+          append_body: true
           draft: false
           prerelease: false
           files: |
