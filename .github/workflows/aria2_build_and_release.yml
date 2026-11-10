@@ -39,13 +39,6 @@ jobs:
           CROSS_HOST: "${{ matrix.cross_host }}"
           USE_LIBRESSL: "${{ matrix.use_libressl }}"
         run: |
-          if [ "${GITHUB_EVENT_NAME}" = release ]; then
-            # 从 GITHUB_REF 提取版本号并移除 'v' 前缀
-            # 例如: refs/tags/v1.37.0 -> 1.37.0
-            export ARIA2_VER="${GITHUB_REF#refs/*/}"
-            ARIA2_VER="${ARIA2_VER#v}"
-            echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
-          fi
           chmod +x "${GITHUB_WORKSPACE}/build.sh"
           "${GITHUB_WORKSPACE}/build.sh"
       - name: zip archiving
@@ -55,16 +48,8 @@ jobs:
         run: |
           apt update && apt install -y zip curl
 
-          # 获取 aria2 版本号（优先从 GitHub API 获取）
-          ARIA2_VERSION=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
-
-          # 如果 API 获取失败，从环境变量获取（release 事件时设置）
-          if [ -z "${ARIA2_VERSION}" ] && [ -n "${ARIA2_VER}" ]; then
-            ARIA2_VERSION="${ARIA2_VER}"
-            echo "ARIA2_VERSION from env: ${ARIA2_VERSION}"
-          else
-            echo "ARIA2_VERSION from API: ${ARIA2_VERSION}"
-          fi
+          # 始终基于 aria2 master 构建，产物版本号固定为 master
+          ARIA2_VERSION=master
 
           if [ x"${USE_LIBRESSL}" = x"1" ]; then
             ARCHIVE_NAME="aria2-${ARIA2_VERSION}-${CROSS_HOST//-unknown/}_libressl_static.zip"
@@ -107,13 +92,6 @@ jobs:
         env:
           CROSS_HOST: "${{ matrix.cross_host }}"
         run: |
-          if [ "${GITHUB_EVENT_NAME}" = release ]; then
-            # 从 GITHUB_REF 提取版本号并移除 'v' 前缀
-            # 例如: refs/tags/v1.37.0 -> 1.37.0
-            export ARIA2_VER="${GITHUB_REF#refs/*/}"
-            ARIA2_VER="${ARIA2_VER#v}"
-            echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
-          fi
           chmod +x "${GITHUB_WORKSPACE}/build.sh"
           "${GITHUB_WORKSPACE}/build.sh"
       - name: zip archiving
@@ -123,16 +101,8 @@ jobs:
         run: |
           apt update && apt install -y zip curl
 
-          # 获取 aria2 版本号（优先从 GitHub API 获取）
-          ARIA2_VERSION=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
-
-          # 如果 API 获取失败，从环境变量获取（release 事件时设置）
-          if [ -z "${ARIA2_VERSION}" ] && [ -n "${ARIA2_VER}" ]; then
-            ARIA2_VERSION="${ARIA2_VER}"
-            echo "ARIA2_VERSION from env: ${ARIA2_VERSION}"
-          else
-            echo "ARIA2_VERSION from API: ${ARIA2_VERSION}"
-          fi
+          # 始终基于 aria2 master 构建，产物版本号固定为 master
+          ARIA2_VERSION=master
 
           if [ x"${USE_LIBRESSL}" = x"1" ]; then
             ARCHIVE_NAME="aria2-${ARIA2_VERSION}-${CROSS_HOST//-unknown/}_libressl_static.zip"
@@ -371,29 +341,12 @@ jobs:
           echo "Final list of files in release directory:"
           ls -laR release/
 
-      - name: Delete existing release and tag if they exist
-        run: |
-          ARIA2_VER=$(curl -s https://api.github.com/repos/aria2/aria2/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' | sed 's/release-//')
-          echo "ARIA2 version: $ARIA2_VER"
-          echo "ARIA2_VER=${ARIA2_VER}" >> $GITHUB_ENV
-
-          RELEASE_ID=$(gh api -H "Accept: application/vnd.github.v3+json" "repos/${{ github.repository }}/releases/tags/v${ARIA2_VER}" -q .id)
-          if [ -n "$RELEASE_ID" ]; then
-            echo "Deleting existing release with tag v${ARIA2_VER} (ID: $RELEASE_ID)..."
-            gh release delete "v${ARIA2_VER}" --cleanup-tag
-          else
-            echo "No release found with tag v${ARIA2_VER}. Skipping deletion."
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release and Upload Assets
+      - name: Upload Assets to Triggering Release
         uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.ARIA2_VER }}
-          name: Aria2 v${{ env.ARIA2_VER }} static
+          tag_name: ${{ github.event.release.tag_name }}
           body_path: release/build_info.md
           draft: false
           prerelease: false

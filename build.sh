@@ -444,26 +444,19 @@ prepare_libssh2() {
 }
 
 build_aria2() {
-  if [ -n "${ARIA2_VER}" ]; then
-    aria2_tag="${ARIA2_VER}"
-  else
-    aria2_tag=master
-    # Check download cache whether expired
-    if [ -f "${DOWNLOADS_DIR}/aria2-${aria2_tag}.tar.gz" ]; then
-      cached_file_ts="$(stat -c '%Y' "${DOWNLOADS_DIR}/aria2-${aria2_tag}.tar.gz")"
-      current_ts="$(date +%s)"
-      if [ "$((current_ts - "${cached_file_ts}"))" -gt 86400 ]; then
-        echo "Delete expired aria2 archive file cache..."
-        rm -f "${DOWNLOADS_DIR}/aria2-${aria2_tag}.tar.gz"
-      fi
+  # 始终从 aria2 master 构建，不再区分 release 版本
+  aria2_tag=master
+  # Check download cache whether expired
+  if [ -f "${DOWNLOADS_DIR}/aria2-${aria2_tag}.tar.gz" ]; then
+    cached_file_ts="$(stat -c '%Y' "${DOWNLOADS_DIR}/aria2-${aria2_tag}.tar.gz")"
+    current_ts="$(date +%s)"
+    if [ "$((current_ts - "${cached_file_ts}"))" -gt 86400 ]; then
+      echo "Delete expired aria2 archive file cache..."
+      rm -f "${DOWNLOADS_DIR}/aria2-${aria2_tag}.tar.gz"
     fi
   fi
 
-  if [ -n "${ARIA2_VER}" ]; then
-    aria2_latest_url="https://github.com/aria2/aria2/releases/download/release-${ARIA2_VER}/aria2-${ARIA2_VER}.tar.gz"
-  else
-    aria2_latest_url="https://github.com/aria2/aria2/archive/master.tar.gz"
-  fi
+  aria2_latest_url="https://github.com/aria2/aria2/archive/master.tar.gz"
   if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
     aria2_latest_url="https://gh-proxy.org/${aria2_latest_url}"
   fi
@@ -482,9 +475,9 @@ build_aria2() {
       patch -p1 < "$patch_file" || exit 1
     done
   fi
-  if [ ! -f ./configure ]; then
-    autoreconf -i
-  fi
+  # 补丁会修改 configure.ac，且容器内 automake 版本可能与发行包生成时不一致，
+  # 必须用当前工具链重新生成
+  autoreconf -if
   if [ x"${SSL}" = xWinTLS ]; then
     TLS_CONF="--with-wintls --without-openssl"
   else
